@@ -1,13 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Milk, ProteinPowder, Receipt1 } from '../../test/Testitems';
-
-// const db = SQLite.openDatabase('dbName', version);
-
-// const readOnly = true;
-// await db.transactionAsync(async tx => {
-//   const result = await tx.executeSqlAsync('SELECT COUNT(*) FROM USERS', []);
-//   console.log('Count:', result.rows[0]['COUNT(*)']);
-// }, readOnly);
+import { Milk, ProteinPowder, Receipt1, LogItem1 } from '../../test/Testitems';
 
 export interface Item {
     id: number | null,
@@ -44,7 +36,7 @@ export interface LogItem {
     qty: number,
     unit: string | null,
     meal: number | null,
-    date_ns: bigint
+    date_ns: number
 }
 
 export interface Receipt {
@@ -57,16 +49,8 @@ export interface Receipt {
     date_ms: number
 }
 
-const dateMs = (dateNs: bigint) => {
-    // console.log(dateNs);
-    // console.log(Number.MAX_SAFE_INTEGER);
-    console.log(dateNs/1000000n);
-
-    if (dateNs >= 0 && dateNs <= Number.MAX_SAFE_INTEGER) {
-        return Number(dateNs);
-    } else {
-        return -1;
-    }
+const dateMs = (dateNs: number) => {
+    return Number(dateNs);
 }
 
 class DataManager {
@@ -249,6 +233,11 @@ class DataManager {
         }
     }
 
+    /**
+     * @param item
+     * 
+     * Adds the given item to the meal_log table.
+     */
     public async addItem(item: Item) {
         const query = `INSERT INTO item (
             name,
@@ -306,16 +295,29 @@ class DataManager {
         console.log(result);
     }
 
-    public logId(month: number, day: number, year: number, meal: number): number {
-        return Number.parseInt(`${year}${`${day}`.padStart(2, '0')}${`${month}`.padStart(2, '0')}${meal}`);
+    /**
+     * @param year The year of logged item.
+     * @param month The month of logged item.
+     * @param day The day of the logged item.
+     * @param meal The meal type. (0 - Breakfast, 1 - Lunch, 2 - Dinner, 3 - Snack)
+     * @returns A log ID for the meal item using the date and meal.
+     */
+    public logId(year: number, month: number, day: number, meal: number): number {
+        return Number.parseInt(`${year}${`${month}`.padStart(2, '0')}${`${day}`.padStart(2, '0')}${meal}`);
     }
 
-    public async getLogItems(month: number, day: number, year: number) {
-        const id1 = this.logId(month, day, year, 1);
-        const id4 = this.logId(month, day, year, 4);
+    /**
+     * @param year The year of logged item.
+     * @param month The month of logged item.
+     * @param day The day of the logged item.
+     * @returns The meal items logged for a given date.
+     */
+    public async getLogItemsDate(year: number, month: number, day: number) {
+        const id1 = this.logId(year, month, day, 1);
+        const id4 = this.logId(year, month, day, 4);
 
         const logQuery = `
-            SELECT item.id, meal_log.meal, item.name, meal_log.qty, receipt.price/receipt.qty as price, item.cals, item.fats, item.prot, meal_log.date_ns FROM meal_log
+            SELECT item.id, meal_log.meal, item.name, meal_log.qty, ROUND(receipt.price/receipt.qty, 2) as price, item.cals, item.carbs, item.fats, item.prot, meal_log.date_ns FROM meal_log
             JOIN item
             ON meal_log.item_id = item.id
             LEFT JOIN receipt
@@ -323,27 +325,24 @@ class DataManager {
             WHERE meal_log.id >= ${id1} AND meal_log.id <= ${id4};
         `
 
-        console.log(logQuery);
-
         const allRows = await this.db.getAllAsync(logQuery);
-        for (const row of allRows) {
-            console.log(row);
-        }
+        return allRows;
     }
 
-    public async logItem(name: string, meal: number, cals: number, dateNs: bigint, source: number) {
-        console.log('bigint 1');
-        console.log(dateMs(dateNs));
-        const month = new Date(Number(dateNs/1000000n)).getMonth()+1;
-        const day = new Date(Number(dateNs/1000000n)).getDate();
-        const year = new Date(Number(dateNs/1000000n)).getFullYear();
-        console.log('bigint 2');
+    /**
+     * @param name The name of the logged item.
+     * @param meal The meal type. (0 - Breakfast, 1 - Lunch, 2 - Dinner, 3 - Snack) 
+     * @param cals The number of calories for that log item consumed.
+     * @param dateNs The date the item was logged in nanoseconds.
+     * @param source (0 - User Input, 1 - Google FIT)
+     * @returns 
+     */
+    public async logItem(name: string, meal: number, cals: number, dateNs: number, source: number) {
+        const month = new Date(dateNs/1000000).getMonth()+1;
+        const day = new Date(dateNs/1000000).getDate();
+        const year = new Date(dateNs/1000000).getFullYear();
 
-        const id = this.logId(month, day, year, meal);
-
-        // console.log(`date: ${date}`);
-        // console.log(`startDate: ${startDate}`);
-        // console.log(`endDate: ${endDate}`);
+        const id = this.logId(year, month, day, meal);
 
         /* Get the item id using the name of the item being logged. */
         const itemQuery = `SELECT * FROM item WHERE item.name="${name}"`;
@@ -352,10 +351,11 @@ class DataManager {
         // Return if the item does not exist.
         if (itemResult == null) {
             // TODO: Do something for when an item is not in the item catalog.
+            console.log(`No Receipt: ${name}`);
             return;
         }
 
-        // console.log(item_result);
+        // console.log(itemResult);
 
         const unit = itemResult.serv_unit != "null" ? itemResult.serv_unit : itemResult.vol_unit != "null"  ? itemResult.vol_unit : itemResult.weight_unit;
 
@@ -366,7 +366,7 @@ class DataManager {
             qty: cals / itemResult.cals,
             unit: unit,
             meal: meal,
-            date_ns: date
+            date_ns: dateNs
         }
 
         /* Querry for checking if there was a duplicate log item for the given day and meal. */
@@ -379,8 +379,6 @@ class DataManager {
         `;
         const dupeResult: any = await this.db.getFirstAsync(dupeQuery);
 
-        // console.log(`countResult:\n${JSON.stringify(countResult, null, 4)}`);
-
         /* If there is a duplicate item. */
         if (dupeResult != null && logItem.date_ns > dupeResult.date_ns) {
             // TODO: More tests and uncomment.
@@ -389,12 +387,12 @@ class DataManager {
             return;
         }
 
-        // console.log(logItem);
+        console.log(`Insert: ${name}`);
         // this.insertInto('meal_log', logItem);
     }
 
     public boughtItem(itemName: any, pkg: any) {
-        this.dbTransaction('', [itemName, pkg]);
+        // this.dbTransaction('', [itemName, pkg]);
     }
 
     public getItem() {

@@ -197,48 +197,35 @@ var consolelog_bymeal = (data: any) => {
     print_days(days);
 }
 
+var loggedIn: boolean = false;
+
+export const isLoggedIn = () => isLoggedIn;
+
 // TODO: Change how you populate the fields.
 var logitem = (data: any) => {
     // DataManager.getInstance().resetTestTables();
+    // DataManager.getInstance().createTables();
 
     // DataManager.getInstance().printTable('item');
     // DataManager.getInstance().printTable('meal_log');
+    // DataManager.getInstance().printTable('receipt');
 
     for (let point of data.point) {
         const name = point.value[2].stringVal;
         const meal = point.value[1].intVal;
-        const start_date: bigint = point.startTimeNanos;
-        // jprint(point);
+        const start_date: number = Number.parseInt(point.startTimeNanos);
 
         for (let val of point.value[0].mapVal) {
             const nutrient: string = val.key;
             const value = val.value.fpVal;
 
-            // console.log(nutrient);
-
-            // console.log(item[lookup[nutrient as keyof typeof lookup] as keyof Item]);
-            // item[lookup[nutrient as keyof typeof lookup] as keyof Item] = value;
-            // console.log(value);
-            // console.log(lookup[nutrient as keyof typeof lookup] as keyof Item);
-            // console.log(item[lookup[nutrient as keyof typeof lookup] as keyof Item]);
-            // item.nutrient = value;
-
             if (nutrient == 'calories') {
                 DataManager.getInstance().logItem(name, meal, value, start_date, 1);
-                const month = new Date(Number(start_date/1000000n)).getMonth();
-                const day = new Date(Number(start_date/1000000n)).getDate();
-                const year = new Date(Number(start_date/1000000n)).getFullYear();
-
-                // console.log(Date.parse(`${year}-${month}-${day}T00:00:00.0Z`));
-                // console.log(Date.parse(`${year}-${month}-${day}T00:00:00.0Z`)+(24*60*60*1000));
+                const month = new Date(start_date/1000000).getMonth();
+                const day = new Date(start_date/1000000).getDate();
+                const year = new Date(start_date/1000000).getFullYear();
             }
         }
-
-        // console.log(item);
-
-        // console.log(item.cals);
-
-        // break;
     }
 }
 
@@ -278,8 +265,12 @@ function LoginHeader(props: HeaderProps) {
 
                         setAccessToken(tokens.accessToken);
                         setUserInfo(userInfoResponse);
-                        console.log(JSON.stringify(userInfo, null, 4));
-                        console.log(accessToken);
+
+                        // console.log(JSON.stringify(userInfo, null, 4));
+                        // console.log(accessToken);
+                        console.log('Google Login Successful');
+
+                        loggedIn = true;
                     } catch (error: any) {
                         if (error.code === statusCodes.SIGN_IN_CANCELLED) {
                             console.log('sign in cancelled');
@@ -303,32 +294,9 @@ function LoginHeader(props: HeaderProps) {
                 }
 
                 const url = "https://www.googleapis.com/fitness/v1/users/me/dataSources/raw:com.google.nutrition:com.fitnow.loseit:/datasets/";
-                // const timeBegin = (Date.now()-(Date.now()%86400000000000)-86400000000000);
-                // const timeEnd = (Date.now()-(Date.now()%86400000000000)+86400000000000);
 
-                // const timeBegin = `${Date.parse(`${date}T00:00:00.0`)*1000000}`;
-                // const timeEnd = `${Date.parse(`${date}T11:59:59.0`)*1000000}`;
-
-                // const day = 16;
-                // const range = 30;
-                // const day = 25;
-                // const range = 2;
-                // const timeBegin = `${Date.parse(`2024-04-${day}T00:00:00.0`)*1000000}`;
-                // const timeEnd = `${Date.parse(`2024-04-${day+range}T00:00:00.0`)*1000000}`;
-
-                
-                const days = 1;
-
-                const timeBegin = Date.parse(`2024-05-19T00:00:00.0Z`)*1000000;
-                const timeEnd = Date.parse(`2024-05-20T05:00:00.0Z`)*1000000;
-
-                // const timeBegin = 1715990400000*1000000;
-                // const timeEnd = 1716163200000*1000000;
-
-                // console.log(timeBegin);
-                // console.log(timeEnd);
-                // console.log(new Date(1716163200000));
-                // console.log(new Date(1716163200000));
+                const timeBegin = Date.parse(`2024-06-01T00:00:00.0Z`)*1000000;
+                const timeEnd = Date.parse(`2024-06-06T05:00:00.0Z`)*1000000;
 
                 const response = await fetch(`${url}${timeBegin}-${timeEnd}?`, {
                     headers: {
@@ -338,14 +306,8 @@ function LoginHeader(props: HeaderProps) {
 
                 const data = await response.json();
 
-                await DataManager.getInstance().createTables();
-
-                // console.log(typeof data);
-
-                // consolelog_bydate(data);
-                // consolelog_bymeal(data);
-                logitem(data);
                 // jprint(data);
+                logitem(data);
             }}/>
         </View>
     );
