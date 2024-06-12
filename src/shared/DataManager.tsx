@@ -1,6 +1,10 @@
 import * as SQLite from 'expo-sqlite';
 import { Milk, ProteinPowder, Receipt1, LogItem1 } from '../../test/Testitems';
 
+export const fatGoal = 55;
+export const carbGoal = 145;
+export const protGoal = 150;
+
 export interface Item {
     id: number | null,
     name: string,
@@ -60,25 +64,6 @@ class DataManager {
     private constructor() {
         // this.db = SQLite.openDatabase('meal_calc');
         this.db = SQLite.openDatabaseSync('meal_calc', undefined);
-    }
-
-    private dbTransaction(transaction: string, args: any[]) {
-        var results = null;
-
-        // this.db.transaction(tx => {
-        //     tx.executeSql(transaction, args, (tran_result, result_set) => {
-        //         console.log(result_set.rows);
-        //         results = result_set.rows;
-        //     });
-
-        //     // console.log('Count:', result.rows[0]['COUNT(*)']);
-        // }, err => {console.log('Error' + err)});
-
-        // if (results != null) {
-        //     return results;
-        // } else {
-        //     return "No Results";
-        // }
     }
 
     public async createTables() {
@@ -393,6 +378,12 @@ class DataManager {
 
     public boughtItem(itemName: any, pkg: any) {
         // this.dbTransaction('', [itemName, pkg]);
+    }
+
+    public async getAllItems(): Promise<Item[]> {
+        var query = `SELECT * FROM item`
+
+        return await this.db.getAllAsync(query) as Item[];
     }
 
     public getItem() {
