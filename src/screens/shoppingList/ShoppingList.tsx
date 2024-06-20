@@ -1,6 +1,8 @@
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Button, FlatList, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import ShoppingItem from './components/ShoppingItem';
 import ShoppingHeader from './components/ShoppingHeader';
+import { Item } from '../../shared/DataManager';
+import { useState } from 'react';
 
 // count        How many actual packages are in the pantry.
 // qty          How many meals are left in the pantry.
@@ -31,39 +33,128 @@ const filteredPantry = (pantry: string) => {
     }
 }
 
-function PantryLog() {
+type PriceModalProps = {
+    // item: Item
+}
+
+const PriceModal = (props: PriceModalProps) => {
+    const [unit, setUnit] = useState('Serv');
+    
+    const [unitType, setUnitType] = useState<number>(0);
+    const [units, setUnits] = useState<string[]>([]);
+
     return (
-        <View style={{flex: 1}}>
-            <View style={styles.topbar}>
-                <View style={{flexDirection: 'row'}}>
-                    <View style={{flex: 1}}/>
-                    <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>[+]</Text>
-                </View>
+        <View>
+            <Text style={[styles.lgwhitetxt, {textAlign: 'center'}]}>Name</Text>
+
+            <View style={[{margin: 10}, styles.vseperator]} />
+
+            <View style={{flexDirection: 'row', justifyContent:'space-evenly'}}>
+                <Text style={unitType == 1 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(1); setUnits(['each', 'can', 'serving', 'scoop']);}}>Serving</Text>
+                <Text style={unitType == 2 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(2); setUnits(['gram', 'ounce', 'pound']);}}>Weight</Text>
+                <Text style={unitType == 3 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(3); setUnits(['cup', 'ounce', 'milliliter']);}}>Volume</Text>
             </View>
-            <View style={styles.mainscreen}>
-                <FlatList
-                    style={{flexGrow: 0}}
-                    keyExtractor={pantry => pantry.id}
-                    data={lists}
-                    renderItem={item => // Pantry Item
-                        <View>
-                            <ShoppingHeader name={item.item.name} price={0}/>
-                            <FlatList
-                                style={{flexGrow: 0}}
-                                keyExtractor={item => item.id}
-                                data={filteredPantry(item.item.id)}
-                                renderItem={item => 
-                                    <ShoppingItem name={item.item.name} count={item.item.count} critical={item.item.qty <= item.item.crit_qty} />
-                                }/>
-                        </View>} />
+            <View style={[{marginTop: 10, marginBottom: 10, marginStart: 30, marginEnd: 30, borderColor: '#777777'}, styles.vseperator]} />
+            <View style={{flexDirection: 'row', justifyContent:'space-evenly'}}>
+                {units.map((val) => {
+                    return(<Text key={val} style={val == unit ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {
+                        setUnit(val);
+                    }}>{val}</Text>);
+                })}
+            </View>
+
+            <View style={[{margin: 10}, styles.vseperator]} />
+
+            <View style={{flexDirection: 'row'}}>
+                <Text style={[styles.greytxt, {flex: 5}]}>Total Cost</Text>
+                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]}>20</TextInput>
+                <Text style={[styles.greytxt, {flex: 4}]}>   $</Text>
+            </View>
+            <View style={{flexDirection: 'row'}}>
+                <Text style={[styles.greytxt, {flex: 5}]}>Quantity</Text>
+                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]}>2.5</TextInput>
+                <Text style={[styles.greytxt, {flex: 4}]} onPress={() => {
+
+                }}>   {unit.substring(0,5)}</Text>
+            </View>
+            <View style={{margin: 10}}/>
+            <Button title={'Add'}/>
+        </View>
+    );
+}
+
+function ShoppingList() {
+    const [modalVisible, setModalVisible] = useState<boolean>(true);
+
+    const [tempModalVisible, setTempModalVisible] = useState<boolean>(true);
+    const [unitType, setUnitType] = useState<number>(0);
+    const [units, setUnits] = useState<string[]>([]);
+    const [curUnit, setCurUnit] = useState<string>('');
+
+    return (
+        <View style={styles.centered}>
+            <Modal
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}>
+                <View style={styles.modal}>
+                    <PriceModal />
+                </View>
+            </Modal>
+
+            <View style={{flex: 1}}>
+                <View style={styles.topbar}>
+                    <View style={{flexDirection: 'row'}}>
+                        <View style={{flex: 1}}/>
+                        <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>[+]</Text>
+                    </View>
+                </View>
+                <View style={styles.mainscreen}>
+                    <FlatList
+                        style={{flexGrow: 0}}
+                        keyExtractor={pantry => pantry.id}
+                        data={lists}
+                        renderItem={item => // Pantry Item
+                            <View>
+                                <ShoppingHeader name={item.item.name} price={0}/>
+                                <FlatList
+                                    style={{flexGrow: 0}}
+                                    keyExtractor={item => item.id}
+                                    data={filteredPantry(item.item.id)}
+                                    renderItem={item => 
+                                        <ShoppingItem name={item.item.name} count={item.item.count} critical={item.item.qty <= item.item.crit_qty} />
+                                    }/>
+                            </View>} />
+                </View>
             </View>
         </View>
     );
 }
 
-export default PantryLog;
+export default ShoppingList;
 
 const styles = StyleSheet.create({
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        // alignItems: 'center',
+    },
+    modal: {
+        // TODO: Make this prettier.
+        marginTop: '50%',
+        margin: 30,
+        padding: 10,
+        // alignItems: 'center',
+        backgroundColor: '#000000'
+    },
+
+    vseperator: {
+        borderBottomColor: '#FFFFFF',
+        borderBottomWidth: (StyleSheet.hairlineWidth*4)
+    },
+
     topbar: {
         backgroundColor: '#777777',
         alignItems: 'center',
@@ -72,6 +163,10 @@ const styles = StyleSheet.create({
     lgwhitetxt: {
         color: '#ffffff',
         fontSize: 30
+    },
+    greytxt: {
+        color: '#B0B0B0',
+        fontSize: 20
     },
     mainscreen: {
         backgroundColor: '#222222',

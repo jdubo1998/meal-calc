@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Milk, ProteinPowder, Receipt1, LogItem1 } from '../../test/Testitems';
+import { Milk, ProteinPowder, ReceiptMilk, LogMilk } from '../../test/Testitems';
 
 export const fatGoal = 55;
 export const carbGoal = 145;
@@ -49,8 +49,15 @@ export interface Receipt {
     store: string,
     item_id: number,
     qty: number,    
+    unit: string,
     price: number,
+    tax_mult: number,
     date_ms: number
+}
+
+export interface Pantry {
+    id: number | null,
+	name: string
 }
 
 const dateMs = (dateNs: number) => {
@@ -73,7 +80,7 @@ class DataManager {
                 "source"	INTEGER NOT NULL,
                 "item_id"	INTEGER NOT NULL DEFAULT -1,
                 "qty"	REAL NOT NULL,
-                "unit"	VARCHAR(10),
+                "unit"	VARCHAR(20),
                 "meal"	INTEGER,
                 "date_ns"	INTEGER NOT NULL
             );
@@ -91,11 +98,11 @@ class DataManager {
                 "serv_off"	REAL DEFAULT 0,
                 "serv_crit"	INTEGER,
                 "weight_qty"	REAL,
-                "weight_unit"	VARCHAR(10),
+                "weight_unit"	VARCHAR(20),
                 "weight_off"	REAL DEFAULT 0,
                 "weight_crit"	INTEGER,
                 "vol_qty"	REAL,
-                "vol_unit"	VARCHAR(10),
+                "vol_unit"	VARCHAR(20),
                 "vol_off"	REAL DEFAULT 0,
                 "vol_crit"	INTEGER,
                 "cals"	REAL DEFAULT 0,
@@ -119,7 +126,9 @@ class DataManager {
                 "store"	VARCHAR(50),
                 "item_id"	INTEGER NOT NULL,
                 "qty"	REAL NOT NULL,
+                "unit"	VARCHAR(20),
                 "price"	REAL NOT NULL,
+                "tax_mult"	INTEGER NOT NULL DEFAULT 1,
                 "date_ms"	INTEGER NOT NULL
             );
         `);
@@ -147,7 +156,7 @@ class DataManager {
 
         this.insertInto('item', Milk);
         this.insertInto('item', ProteinPowder);
-        this.insertInto('receipt', Receipt1);
+        this.insertInto('receipt', ReceiptMilk);
     }
 
     public async insertInto(table: string, obj: any) {
