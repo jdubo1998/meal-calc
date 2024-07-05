@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Milk, ProteinPowder, ReceiptMilk, LogMilk } from '../../test/Testitems';
+import { Milk, ProteinPowder, ReceiptMilk, LogMilk, Bacon, ReceiptProteinPowder, LogBacon } from '../../test/Testitems';
 
 export const fatGoal = 55;
 export const carbGoal = 145;
@@ -10,6 +10,7 @@ export interface Item {
     name: string,
     brand: string | null,
     pantry_id: number | null,
+    unit_type: number,
     serv_qty: number | null,
     serv_unit: string | null,
     serv_off: number,
@@ -74,7 +75,7 @@ class DataManager {
     }
 
     public async createTables() {
-        const result1 = await this.db.execAsync(`
+        await this.db.execAsync(`
             CREATE TABLE IF NOT EXISTS "meal_log" (
                 "id"	INTEGER NOT NULL DEFAULT -1,
                 "source"	INTEGER NOT NULL,
@@ -85,14 +86,15 @@ class DataManager {
                 "date_ns"	INTEGER NOT NULL
             );
         `);
-        console.log(`Create meal_log Table: ${result1}`);
+        console.log('Create meal_log Table');
 
-        const result2 = await this.db.runAsync(`
+        await this.db.runAsync(`
             CREATE TABLE IF NOT EXISTS "item" (
                 "id"	INTEGER,
                 "name"	VARCHAR(50) NOT NULL,
                 "brand"	VARCHAR(50),
                 "pantry_id"	INTEGER,
+                "unit_type"	INTEGER NOT NULL DEFAULT 0,
                 "serv_qty"	INTEGER,
                 "serv_unit"	VARCHAR(20),
                 "serv_off"	REAL DEFAULT 0,
@@ -117,9 +119,9 @@ class DataManager {
                 PRIMARY KEY("id")
             );
         `);
-        console.log(`Create item Table: ${result2}`);
+        console.log('Create item Table');
 
-        const result3 = await this.db.runAsync(`
+        await this.db.runAsync(`
             CREATE TABLE IF NOT EXISTS "receipt" (
                 "id"	INTEGER NOT NULL DEFAULT -1,
                 "source"	INTEGER NOT NULL,
@@ -132,31 +134,41 @@ class DataManager {
                 "date_ms"	INTEGER NOT NULL
             );
         `);
-        console.log(`Create receipt Table: ${result3}`);
+        console.log('Create receipt Table');
+
+        await this.db.runAsync(`
+            CREATE TABLE IF NOT EXISTS "pantry" (
+                "id"	INTEGER,
+                "name"	VARCHAR(30),
+                PRIMARY KEY("id")
+            );
+        `);
+        console.log('Create pantry Table');
+
         console.log();
         console.log();
         console.log();
     }
 
-    public async resetTestTables() {
-        console.log('***   Resetting Tables   ***')
+    public async resetTestTables(table: string) {
+        console.log('***   Resetting Tables   ***');
 
-        const result1 = await this.db.execAsync('DROP TABLE IF EXISTS meal_log;');
-        console.log(`Drop meal_log Table: ${result1}`);
-
-        const result2 = await this.db.runAsync('DROP TABLE IF EXISTS item;');
-
-        console.log(`Drop item Table: ${result2}`);
-
-        const result3 = await this.db.runAsync('DROP TABLE IF EXISTS receipt;');
-
-        console.log(`Drop item Table: ${result3}`);
+        console.log(`* Reset ${table} *`);
+        await this.db.runAsync(`DROP TABLE IF EXISTS ${table}`);
         
         await this.createTables();
 
-        this.insertInto('item', Milk);
-        this.insertInto('item', ProteinPowder);
-        this.insertInto('receipt', ReceiptMilk);
+        if (table == 'item') {
+            this.insertInto('item', Milk);
+            this.insertInto('item', ProteinPowder);
+            this.insertInto('item', Bacon);
+        } else if (table == 'receipt') {
+            this.insertInto('receipt', ReceiptMilk);
+            this.insertInto('receipt', ReceiptProteinPowder);
+        } else if (table == 'meal_log') {
+            this.insertInto('meal_log', LogMilk);
+            this.insertInto('meal_log', LogBacon);
+        }
     }
 
     public async insertInto(table: string, obj: any) {
@@ -222,9 +234,13 @@ class DataManager {
     }
 
     public async printTable(table: string) {
+        console.log('***   ' + table + '   ***');
+        
         for await (const row of this.db.getEachAsync(`SELECT * FROM ${table}`)) {
             console.log(row);
         }
+
+        console.log();
     }
 
     /**
@@ -393,6 +409,65 @@ class DataManager {
         var query = `SELECT * FROM item`
 
         return await this.db.getAllAsync(query) as Item[];
+    }
+
+    public async getPantries(): Promise<Pantry[]> {
+        var query = `SELECT * FROM pantry`
+
+        return await this.db.getAllAsync(query) as Pantry[];
+    }
+
+    public async getPantryItems(): Promise<any[]> {
+        const pantries = new Array<any>();
+
+        for (var i = 0; i < 10; i++) {
+            console.log();
+        }
+
+        var qtyQuery = `
+            SELECT item.id, pantry.name as pantry, item.name, item.serv_off, item.weight_off, item.vol_off, SUM(meal_log.qty) as meallog_qty, meal_log.unit as meallog_unit, SUM(receipt.qty) as receipt_qty, receipt.unit as receipt_unit
+            FROM item
+            JOIN pantry
+            ON pantry.id = item.pantry_id
+            LEFT JOIN meal_log
+            ON meal_log.item_id = item.id
+            LEFT JOIN receipt
+            ON receipt.item_id = item.id
+            GROUP BY item.id, meal_log.unit, receipt.unit;
+        `
+
+        // await this.resetTestTables();
+
+        // await this.printTable('meal_log');
+        // await this.printTable('receipt');
+        // await this.printTable('item');
+
+        const qtyResult = await this.db.getAllAsync(qtyQuery);
+
+        // TODO: Consolidate any duplicates items with different units into a single line.
+
+        // console.log(qtyResult);
+
+        qtyResult.forEach((item: any) => {
+            var found = false;
+
+            for (const pantry of pantries) {
+                if (pantry.name == item.pantry) {
+                    pantry.items.push(item);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                pantries.push({
+                    name: item.pantry,
+                    items: new Array(item)
+                });
+            }
+        });
+
+        return pantries;
     }
 
     public getItem() {

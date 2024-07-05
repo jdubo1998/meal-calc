@@ -6,19 +6,19 @@ import ItemList from './src/screens/itemList/ItemList';
 import ShoppingList from './src/screens/shoppingList/ShoppingList';
 
 export default function App() {
-  return (
-    // <PantryLog />
-    // <MealLog />
-    // <ItemList />
-    <ShoppingList />
-  );
+    return (
+        <PantryLog />
+        // <MealLog />
+        // <ItemList />
+        // <ShoppingList />
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
