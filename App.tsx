@@ -7,10 +7,10 @@ import ShoppingList from './src/screens/shoppingList/ShoppingList';
 
 export default function App() {
     return (
-        <PantryLog />
+        // <PantryLog />
         // <MealLog />
         // <ItemList />
-        // <ShoppingList />
+        <ShoppingList />
     );
 }
 

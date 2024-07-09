@@ -1,47 +1,33 @@
 import { Button, FlatList, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import ShoppingItem from './components/ShoppingItem';
 import ShoppingHeader from './components/ShoppingHeader';
-import { Item } from '../../shared/DataManager';
-import { useState } from 'react';
+import DataManager, { Item } from '../../shared/DataManager';
+import { useEffect, useState } from 'react';
 
-// count        How many actual packages are in the pantry.
-// qty          How many meals are left in the pantry.
-// count_qty    How many meals does each package contains when bought new.
-var pantryItems = [
-    {id: "0", pantry: "0", name: "Rice", count: 1, qty: 10, crit_qty: 6, count_qty: 25, date: "2/4/24"},
-    {id: "1", pantry: "0", name: "Chicken Chunk Cans", count: 1, qty: 1, crit_qty: 1, count_qty: 1, date: "1/20/24"},
-    {id: "2", pantry: "0", name: "Tuna Packets", count: 0, qty: 0, crit_qty: 1, count_qty: 1, date: "1/5/24"},
-    {id: "3", pantry: "1", name: "Yogurt", count: 3, qty: 0, crit_qty: 2, count_qty: 1, date: "1/25/24"}
-]
-
-var mealLogItems = [
-    { id : "0", meal: "0", name: "Egg McMuffin", qty: 2, price: 2.5, cals: 300, carbs: 20, fats: 3, prot: 15, date: "2/10/24"},
-    { id : "1", meal: "0", name: "Sausage McGriddle", qty: 1, price: 3.25, cals: 265, carbs: 22, fats: 4, prot: 15, date: "2/10/24"},
-    { id : "2", meal: "2", name: "Yogurt", qty: 1, price: 0.64, cals: 80, carbs: 0, fats: 0, prot: 12, date: "2/10/24"}
-]
-
-var lists = [
-    {id: "0", name: "Critical"},
-    {id: "1", name: "Other"}
-]
-
-const filteredPantry = (pantry: string) => {
-    if (pantry == "-1") {
-        return pantryItems;
-    } else {
-        return pantryItems.filter((val) => { return val.pantry == pantry; }); 
-    }
+type ShoppingtListItem = {
+    name: string,
+    store: string,
+    cost: number,
+    quantity: number
 }
 
 type PriceModalProps = {
     // item: Item
+    onRequestClose: (item: any) => void
 }
 
 const PriceModal = (props: PriceModalProps) => {
-    const [unit, setUnit] = useState('Serv');
+    const [unit, setUnit] = useState('each');
     
-    const [unitType, setUnitType] = useState<number>(0);
-    const [units, setUnits] = useState<string[]>([]);
+    const [unitType, setUnitType] = useState<number>(1);
+    const [units, setUnits] = useState<string[]>(['each', 'can', 'serving', 'scoop']);
+
+    var shoppingItem = {
+        name: '',
+        store: '',
+        cost: 0,
+        quantity: 0
+    }
 
     return (
         <View>
@@ -50,9 +36,9 @@ const PriceModal = (props: PriceModalProps) => {
             <View style={[{margin: 10}, styles.vseperator]} />
 
             <View style={{flexDirection: 'row', justifyContent:'space-evenly'}}>
-                <Text style={unitType == 1 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(1); setUnits(['each', 'can', 'serving', 'scoop']);}}>Serving</Text>
-                <Text style={unitType == 2 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(2); setUnits(['gram', 'ounce', 'pound']);}}>Weight</Text>
-                <Text style={unitType == 3 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={() => {setUnitType(3); setUnits(['cup', 'ounce', 'milliliter']);}}>Volume</Text>
+                <Text style={unitType == 1 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={ () => {setUnitType(1); setUnits(['each', 'can', 'serving', 'scoop']);} }>Serving</Text>
+                <Text style={unitType == 2 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={ () => {setUnitType(2); setUnits(['gram', 'ounce', 'pound']);} }>Weight</Text>
+                <Text style={unitType == 3 ? [styles.greytxt, {color: '#FFFFFF'}] : styles.greytxt} onPress={ () => {setUnitType(3); setUnits(['cup', 'ounce', 'milliliter']);} }>Volume</Text>
             </View>
             <View style={[{marginTop: 10, marginBottom: 10, marginStart: 30, marginEnd: 30, borderColor: '#777777'}, styles.vseperator]} />
             <View style={{flexDirection: 'row', justifyContent:'space-evenly'}}>
@@ -67,29 +53,41 @@ const PriceModal = (props: PriceModalProps) => {
 
             <View style={{flexDirection: 'row'}}>
                 <Text style={[styles.greytxt, {flex: 5}]}>Total Cost</Text>
-                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]}>20</TextInput>
+                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]} onChangeText={ (text) => {
+                    shoppingItem.cost = Number.parseFloat(text);
+                }}>0</TextInput>
                 <Text style={[styles.greytxt, {flex: 4}]}>   $</Text>
             </View>
             <View style={{flexDirection: 'row'}}>
                 <Text style={[styles.greytxt, {flex: 5}]}>Quantity</Text>
-                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]}>2.5</TextInput>
-                <Text style={[styles.greytxt, {flex: 4}]} onPress={() => {
-
-                }}>   {unit.substring(0,5)}</Text>
+                <TextInput keyboardType='number-pad' style={[styles.greytxt, {flex: 8, textAlign: 'right'}]} onChangeText={ (text) => {
+                    shoppingItem.quantity = Number.parseFloat(text);
+                }}>0</TextInput>
+                <Text style={[styles.greytxt, {flex: 4}]}>   {unit.substring(0,5)}</Text>
             </View>
             <View style={{margin: 10}}/>
-            <Button title={'Add'}/>
+            <Button title={'Add'} onPress={ () => {
+                console.log(`Add   ${shoppingItem.cost}   ${shoppingItem.quantity}`);
+                props.onRequestClose(shoppingItem);
+            }}/>
         </View>
     );
 }
 
 function ShoppingList() {
-    const [modalVisible, setModalVisible] = useState<boolean>(true);
+    const [shoppingList, setShoppingList] = useState<any[]>([]);
+    const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-    const [tempModalVisible, setTempModalVisible] = useState<boolean>(true);
-    const [unitType, setUnitType] = useState<number>(0);
-    const [units, setUnits] = useState<string[]>([]);
-    const [curUnit, setCurUnit] = useState<string>('');
+    // Execute on first mount
+    useEffect(() => {
+        const getLog = async () => {
+            const data = await DataManager.getInstance().getShoppingList();
+
+            setShoppingList(data);
+        }
+
+        getLog();
+    }, []);
 
     return (
         <View style={styles.centered}>
@@ -100,7 +98,13 @@ function ShoppingList() {
                     setModalVisible(!modalVisible);
                 }}>
                 <View style={styles.modal}>
-                    <PriceModal />
+                    <PriceModal 
+                        onRequestClose={(response: ShoppingtListItem) => {
+                            setModalVisible(false);
+
+                            // TODO: Do something with the item that is being added.
+                            console.log(response);
+                        }} />
                 </View>
             </Modal>
 
@@ -108,23 +112,38 @@ function ShoppingList() {
                 <View style={styles.topbar}>
                     <View style={{flexDirection: 'row'}}>
                         <View style={{flex: 1}}/>
-                        <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>[+]</Text>
+                        <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={ () => {
+                            setModalVisible(true);
+                        } }>[+]</Text>
                     </View>
                 </View>
                 <View style={styles.mainscreen}>
                     <FlatList
                         style={{flexGrow: 0}}
-                        keyExtractor={pantry => pantry.id}
-                        data={lists}
-                        renderItem={item => // Pantry Item
+                        keyExtractor={list => list.name}
+                        data={shoppingList}
+                        renderItem={list => // Pantry Item
                             <View>
-                                <ShoppingHeader name={item.item.name} price={0}/>
+                                <ShoppingHeader name={list.item.name} price={list.item.cost}/>
                                 <FlatList
                                     style={{flexGrow: 0}}
                                     keyExtractor={item => item.id}
-                                    data={filteredPantry(item.item.id)}
+                                    data={list.item.items}
                                     renderItem={item => 
-                                        <ShoppingItem name={item.item.name} count={item.item.count} critical={item.item.qty <= item.item.crit_qty} />
+                                        {
+                                            const stock = item.item.receipt_total_qty-item.item.meallog_total_qty;
+
+                                            console.log(item.item);
+
+                                            return (
+                                                <ShoppingItem
+                                                    name={item.item.name}
+                                                    cost={item.item.receipt_price}
+                                                    store={item.item.store}
+                                                    count={stock}
+                                                    critical={stock <= item.item.crit} />
+                                            );
+                                        }
                                     }/>
                             </View>} />
                 </View>

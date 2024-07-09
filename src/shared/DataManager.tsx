@@ -474,6 +474,72 @@ class DataManager {
 
     }
 
+    public async getShoppingList(store?: string) {
+        const shoppingList = [
+            {name: 'Critical', cost: 0, items: new Array<any>()},
+            {name: 'Low', cost: 0, items: new Array<any>()},
+            {name: 'Extra', cost: 0, items: new Array<any>()}
+        ];
+
+        for (var i = 0; i < 10; i++) {
+            console.log();
+        }
+
+        var qtyQuery = `
+            SELECT
+                item.id,
+                MAX(receipt.id) as receipt_id,
+                item.name,
+                item.brand,
+                item.unit_type,
+                CASE
+                    WHEN item.unit_type IS 0 THEN item.serv_crit
+                    WHEN item.unit_type IS 1 THEN item.weight_crit
+                    ELSE item.vol_crit
+                    END AS crit,
+                CASE
+                    WHEN item.unit_type IS 0 THEN item.serv_off
+                    WHEN item.unit_type IS 1 THEN item.weight_off
+                    ELSE item.vol_off
+                    END AS off,
+                SUM(meal_log.qty) as meallog_total_qty,
+                meal_log.unit as meallog_total_unit,
+                receipt.price as receipt_price,
+                receipt.qty as receipt_qty,
+                receipt.unit as receipt_unit,
+                SUM(receipt.qty) as receipt_total_qty,
+                receipt.unit as receipt_total_unit,
+                receipt.store
+            FROM meal_log
+            FULL OUTER JOIN receipt
+            ON receipt.item_id = meal_log.item_id
+            JOIN item
+            ON item.id = meal_log.item_id OR item.id = receipt.item_id
+            ${store ? ` WHERE receipt.store = "${store}"` : ''}
+            GROUP BY item.id, meal_log.unit, receipt.unit
+        `
+
+        const qtyResult = await this.db.getAllAsync(qtyQuery);
+
+        qtyResult.forEach( (item: any) => {
+            const stock = item.receipt_total_qty - item.meallog_total_qty;
+
+            if (stock <= item.crit) {
+                shoppingList[0].items.push(item);
+                shoppingList[0].cost += item.receipt_price;
+            } else if (stock <= item.crit*2) {
+                shoppingList[1].items.push(item);
+                shoppingList[1].cost += item.receipt_price;
+            } 
+            // else {
+            //     shoppingList[2].items.push(item);
+            //     shoppingList[2].cost += item.receipt_price;
+            // }
+        } );
+
+        return shoppingList;
+    }
+
     public static getInstance() {
         if (this.instance == null) {
             this.instance = new DataManager();
