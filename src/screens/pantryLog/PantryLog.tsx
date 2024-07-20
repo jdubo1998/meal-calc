@@ -6,7 +6,7 @@ import PantryHeader from './components/PantryHeader';
 import LoginHeader from '../components/LoginHeader';
 import DataManager, { Item, Pantry } from '../../shared/DataManager';
 
-function PantryLog() {
+const PantryLog = () => {
     const [pantries, setPantries] = useState<any[]>([]);
 
     // DataManager.getInstance().createTables();

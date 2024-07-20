@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TextInput } from "react-native";
 import DataManager, { Item, fatGoal, carbGoal, protGoal } from "../../../shared/DataManager";
+import { ItemNutritionRouteProp } from "../../../../App";
 
 type CaloriesRowProps = {
     value: number
@@ -44,43 +45,43 @@ const NutritionRow = (props: NutritionRowProps) => {
     );
 }
 
-type ItemNutritionProps = {
-    item: Item
-}
+// type ItemNutritionProps = {
+//     item: Item
+// }
 
-function ItemNutrition(props: ItemNutritionProps) {
+const ItemNutrition = ( {route, navigation}: ItemNutritionRouteProp ) => {
     return (
         <View style={{flex: 1}}>
             <View style={styles.topbar}>
                 <View style={{flexDirection: 'row'}}>
                     {/* <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>Save</Text> */}
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={() => {
-                        console.log(props.item);
+                        // console.log(route.params.item);
                     }}>Save</Text>
                 </View>
             </View>
             <View style={styles.mainscreen}>
                 <View style={styles.nutritioncard}>
-                    <CaloriesRow value={props.item.cals}/>
+                    <CaloriesRow value={route.params.item.cals}/>
                     <View style={styles.nutritionthickseperator} />
                     <Text />
-                    <NutritionRow label="Total Fat" item={props.item} attr={"fats"} unit="g" subvalue={(props.item.fats*100/fatGoal).toPrecision(2)} />
+                    <NutritionRow label="Total Fat" item={route.params.item} attr={"fats"} unit="g" subvalue={(route.params.item.fats*100/fatGoal).toPrecision(2)} />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Saturated Fat" item={props.item} attr={"sat_fat"} unit="g" />
+                    <NutritionRow label="       Saturated Fat" item={route.params.item} attr={"sat_fat"} unit="g" />
                     
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Cholesterol" item={props.item} attr={"cholest"} unit="mg" />
+                    <NutritionRow label="Cholesterol" item={route.params.item} attr={"cholest"} unit="mg" />
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Sodium" item={props.item} attr={"sodium"} unit="mg" />
+                    <NutritionRow label="Sodium" item={route.params.item} attr={"sodium"} unit="mg" />
 
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Total Carbohydrates" item={props.item} attr={"carbs"} unit="g" subvalue={(props.item.carbs*100/carbGoal).toPrecision(2)} />
+                    <NutritionRow label="Total Carbohydrates" item={route.params.item} attr={"carbs"} unit="g" subvalue={(route.params.item.carbs*100/carbGoal).toPrecision(2)} />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Dietary Fiber" item={props.item} attr={"fiber"} unit="g" />
+                    <NutritionRow label="       Dietary Fiber" item={route.params.item} attr={"fiber"} unit="g" />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Total Sugars" item={props.item} attr={"sugar"} unit="g" />
+                    <NutritionRow label="       Total Sugars" item={route.params.item} attr={"sugar"} unit="g" />
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Protein" item={props.item} attr={"prot"} unit="g" subvalue={(props.item.prot*100/protGoal).toPrecision(2)} />
+                    <NutritionRow label="Protein" item={route.params.item} attr={"prot"} unit="g" subvalue={(route.params.item.prot*100/protGoal).toPrecision(2)} />
                 </View>
             </View>
         </View>

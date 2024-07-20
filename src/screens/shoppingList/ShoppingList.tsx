@@ -74,7 +74,7 @@ const PriceModal = (props: PriceModalProps) => {
     );
 }
 
-function ShoppingList() {
+const ShoppingList = () => {
     const [shoppingList, setShoppingList] = useState<any[]>([]);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
 
