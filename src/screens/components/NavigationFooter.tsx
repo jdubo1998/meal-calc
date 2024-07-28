@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TextInput, Button } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, NavigatorScreenParams  } from "@react-navigation/native";
 
 const NavigationFooter = () => {
     const navigation = useNavigation();
@@ -10,7 +10,7 @@ const NavigationFooter = () => {
                 // navigation.navigate('Root', {screen: 'Pantry'});
             }}/>
             <Button title="Pantry" onPress={() => {
-                
+                // navigation.navigate('RootStack', {screen: 'PantryLog'});
             }}/>
             <Button title="Shopping" onPress={() => {
                 
@@ -26,7 +26,8 @@ const styles = StyleSheet.create({
     bottombar: {
         backgroundColor: '#777777',
         alignItems: 'center',
-        flexDirection: "row"
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
     },
 
     lgwhitetxt: {

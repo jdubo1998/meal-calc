@@ -1,10 +1,11 @@
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View, DeviceEventEmitter } from 'react-native';
 import {useEffect, useState} from 'react';
 import LogItem from './components/LogItem';
 import LogHeader from './components/LogHeader';
 import { isLoggedIn } from '../components/LoginHeader';
 import LoginHeader from '../components/LoginHeader';
 import DataManager from '../../shared/DataManager';
+import { MealLogRouteProp } from '../../../App';
 
 // Web Client ID: 768950932318-pnu9uiacmbvsssanbhujfmd68r4ii5rq.apps.googleusercontent.com
 // Android Client ID: 768950932318-9ddatcluj23i17ijf28re6dcee5b9npu.apps.googleusercontent.com
@@ -29,15 +30,16 @@ const totalFilteredItemsByMeal = (mealLog: any[], meal: string, attr: string): n
     return filterItemsByMeal(mealLog, meal).map( val => val.qty * val[attr]).reduce((val, tot) => val + tot, 0);
 }
 
-const MealLog = () => {
+const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     const [mealLog, setMealLog] = useState<any[]>([]);
-    const [curDate, setCurDate] = useState<number>(Date.now());
+    // const [curDate, setCurDate] = useState<number>(Date.now());
+    const [curDate, setCurDate] = useState<number>(1716163200000);
 
     const year = new Date(curDate).getFullYear();
     const month = new Date(curDate).getMonth()+1;
     const day = new Date(curDate).getDate();
 
-    // Execute on first mount
+    // Execute on first mount and when the curDate gets updated.
     useEffect(() => {
         const getLog = async () => {
             const data = await DataManager.getInstance().getLogItemsDate(year, month, day);
@@ -50,6 +52,8 @@ const MealLog = () => {
             getLog();
         }
     }, [curDate]);
+
+    console.log(route);
 
     const calLimit = 1700;
     const limitPercentage = 75;
@@ -64,6 +68,8 @@ const MealLog = () => {
     return (
         <View style={{flex: 1}}>
             <LoginHeader/>
+
+            {/* Calendar Top Header */}
             <View style={styles.topbar}>
                 <View style={{flexDirection: 'row'}}>
                     <View style={{flex: 1}}/>
@@ -111,21 +117,37 @@ const MealLog = () => {
                     </View>
                 </View>
             </View>
+            
+            {/* Meal Log Screen */}
             <View style={styles.mainscreen}>
                 <FlatList
                     style={{flexGrow: 0}}
-                    keyExtractor={pantry => pantry.id}
+                    keyExtractor={meal => meal.id}
                     data={meals}
-                    renderItem={item => // Log Item
+
+                    /* Meal Type */
+                    renderItem={meal =>
                         <View>
-                            <LogHeader name={item.item.name} price={totalFilteredItemsByMeal(mealLog, item.item.id, 'price')} cals={totalFilteredItemsByMeal(mealLog, item.item.id, 'cals')} />
+                            <LogHeader 
+                                name={meal.item.name}
+                                price={totalFilteredItemsByMeal(mealLog, meal.item.id, 'price')}
+                                cals={totalFilteredItemsByMeal(mealLog, meal.item.id, 'cals')} />
                             <FlatList
                                 style={{flexGrow: 0}}
                                 keyExtractor={item => item.id}
-                                data={filterItemsByMeal(mealLog, item.item.id)}
+                                data={filterItemsByMeal(mealLog, meal.item.id)}
                                 renderItem={item => 
-                                    <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
+                                    <TouchableOpacity onPress={() => {
+                                        navigation.navigate('ItemNutrition', {item: item.item});
+                                    }}>
+                                        <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
+                                    </TouchableOpacity>
                                 } />
+
+                            {/* When you click on the Add + button, you will be taken to the item list to select an item to add to the meal plan. */}
+                            <Text style={{marginLeft: 10, color: '#B0B0B0'}} onPress={() => { navigation.navigate('ItemList'); }}>
+                                Add +
+                            </Text>
                             <View style={{padding: 10}}/>
                         </View>}/>
             </View>

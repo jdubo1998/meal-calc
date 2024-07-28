@@ -6,18 +6,20 @@ import MealLog from './src/screens/mealLog/MealLog';
 import ItemList from './src/screens/itemList/ItemList';
 import ShoppingList from './src/screens/shoppingList/ShoppingList';
 import ItemNutrition from './src/screens/itemList/subscreens/ItemNutrition';
-import { Item } from './src/shared/DataManager';
+import { Item, LogItem } from './src/shared/DataManager';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 type RootStackParamList = {
     PantryLog: undefined,
-    MealLog: undefined,
+    MealLog: undefined | {newLogItem: LogItem},
     ItemList: undefined,
     ShoppingList: undefined,
     ItemNutrition: {item: Item}
 };
 
-const RootStack = createNativeStackNavigator<RootStackParamList>();
+const STACK1 = createNativeStackNavigator<RootStackParamList>();
+const TABSTACK1 = createBottomTabNavigator();
 
 export type PantryLogRouteProp = NativeStackScreenProps<RootStackParamList, 'PantryLog'>;
 export type MealLogRouteProp = NativeStackScreenProps<RootStackParamList, 'MealLog'>;
@@ -25,32 +27,43 @@ export type ItemListRouteProp = NativeStackScreenProps<RootStackParamList, 'Item
 export type ShoppingListRouteProp = NativeStackScreenProps<RootStackParamList, 'ShoppingList'>;
 export type ItemNutritionRouteProp = NativeStackScreenProps<RootStackParamList, 'ItemNutrition'>;
 
-export default function App() {
+const STACK1Screen = () => {
+    return (
+        <STACK1.Navigator initialRouteName='MealLog'>
+            <STACK1.Screen
+                name='MealLog'
+                component={MealLog}
+                options={{headerShown: false}} />
+            <STACK1.Screen
+                name='ItemList'
+                component={ItemList}
+                options={{headerShown: false}} />
+            <STACK1.Screen
+                name='ItemNutrition'
+                component={ItemNutrition}
+                initialParams={{}}
+                options={{headerShown: false}} />
+        </STACK1.Navigator>
+    );
+}
+
+const App = () => {
     return (
         <NavigationContainer>
-            <RootStack.Navigator initialRouteName='ItemList'>
-                <RootStack.Screen
+            <TABSTACK1.Navigator>
+                <TABSTACK1.Screen
+                    name='STACK1'
+                    component={STACK1Screen}
+                    options={{headerShown: false}} />
+                <TABSTACK1.Screen
                     name='PantryLog'
                     component={PantryLog}
                     options={{headerShown: false}} />
-                <RootStack.Screen
-                    name='MealLog'
-                    component={MealLog}
-                    options={{headerShown: false}} />
-                <RootStack.Screen
-                    name='ItemList'
-                    component={ItemList}
-                    options={{headerShown: false}} />
-                <RootStack.Screen
+                <TABSTACK1.Screen
                     name='ShoppingList'
                     component={ShoppingList}
                     options={{headerShown: false}} />
-                <RootStack.Screen
-                    name='ItemNutrition'
-                    component={ItemNutrition}
-                    initialParams={{}}
-                    options={{headerShown: false}} />
-            </RootStack.Navigator>
+            </TABSTACK1.Navigator>
         </NavigationContainer>
     );
 }
@@ -63,3 +76,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 });
+
+export default App;

@@ -1,26 +1,32 @@
+import { Button, FlatList, StyleSheet, Text, TextInput, Touchable, TouchableOpacity, View, DeviceEventEmitter } from 'react-native';
 import { useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
-import DataManager, { Item } from '../../shared/DataManager';
+import DataManager, { Item, LogItem } from '../../shared/DataManager';
 import ItemItem from './components/ItemItem';
 import ItemNutrition from './subscreens/ItemNutrition';
 import { Milk, ProteinPowder } from '../../../test/Testitems';
+import { ItemListRouteProp } from '../../../App';
 
 // count        How many actual packages are in the pantry.
 // qty          How many meals are left in the pantry.
 // count_qty    How many meals does each package contains when bought new.
 
 var fullItemList: Item[];
+var lastFilteredTextLength = 0;
 
-function ItemList() {
+const filterItemList = (filterText: string, itemList: Item[]): Item[] => {
+    return itemList.filter((item) => item.name.toLowerCase().includes(filterText) );
+}
+
+const ItemList = ( {route, navigation}: ItemListRouteProp) => {
     const [itemList, setItemList] = useState<Item[]>([]);
 
     useEffect(() => {
         const getFullItemList = async () => {
             fullItemList = await DataManager.getInstance().getAllItems();
-            setItemList(fullItemList);
         }
 
         getFullItemList();
+        setItemList(fullItemList);
     }, []);
 
     return (
@@ -28,7 +34,19 @@ function ItemList() {
             {/* <ItemNutrition item={ProteinPowder} /> */}
             <View style={styles.topbar}>
                 <View style={{flexDirection: 'row'}}>
-                    <View style={{flex: 1}}/>
+                    <TextInput style={[{flex: 7, borderBottomColor: '#ffffff', borderBottomWidth: 1}, styles.whitetext]} onChangeText={(filterText) => {
+                        /* If the filter text is being added to, then filter only on the already filtered list to save computations. */
+                        if (lastFilteredTextLength < filterText.length) {
+                            setItemList(filterItemList(filterText, itemList));
+
+                        /* If the filter text is being deleted, then filter on the full list. */
+                        } else {
+                            setItemList(filterItemList(filterText, fullItemList));
+                        }
+
+                        lastFilteredTextLength = filterText.length;
+                    }} />
+
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>[+]</Text>
                 </View>
             </View>
@@ -38,9 +56,20 @@ function ItemList() {
                     keyExtractor={item => `${item.id}`}
                     data={itemList}
                     renderItem={item => // Pantry Item
-                        <View>
+                        <TouchableOpacity onPress={() => {
+                            // TODO: Add modal for adding information.
+                            navigation.navigate('MealLog', {newLogItem: {
+                                id: null,
+                                source: 0,
+                                item_id: item.item.id!,
+                                qty: 1,
+                                unit: 'cup',
+                                meal: 2,
+                                date_ns: 1414
+                            }});
+                        }}>
                             <ItemItem name={item.item.name}/>
-                        </View>
+                        </TouchableOpacity>
                     } 
                 />
             </View>
@@ -54,7 +83,11 @@ const styles = StyleSheet.create({
     topbar: {
         backgroundColor: '#777777',
         alignItems: 'center',
-        paddingTop: 40
+        padding: 10
+    },
+    whitetext: {
+        color: '#ffffff',
+        fontSize: 20
     },
     lgwhitetxt: {
         color: '#ffffff',

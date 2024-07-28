@@ -30,7 +30,6 @@ const NutritionRow = (props: NutritionRowProps) => {
             <Text style={[styles.greytxt, {flex: 2}]}>{props.subvalue ? `${props.subvalue}%` : ""}</Text>
             {/* <Text style={[styles.whitetxt, {flex: 2, textAlign: "right"}]}>{props.value}</Text> */}
             <TextInput style={[styles.whitetxt, {flex: 2, textAlign: "right"}]} keyboardType="number-pad" onChangeText={(text) => {
-                // console.log(text);
                 try {
                     // props.value = Number.parseFloat(text);
                     (props.item as any)[props.attr] = Number.parseFloat(text);
@@ -44,10 +43,6 @@ const NutritionRow = (props: NutritionRowProps) => {
         </View>
     );
 }
-
-// type ItemNutritionProps = {
-//     item: Item
-// }
 
 const ItemNutrition = ( {route, navigation}: ItemNutritionRouteProp ) => {
     return (
