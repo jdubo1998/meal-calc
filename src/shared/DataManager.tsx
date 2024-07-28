@@ -470,8 +470,10 @@ class DataManager {
         return pantries;
     }
 
-    public getItem() {
+    public async getItem(item_id: number) {
+        var query = `SELECT * FROM item WHERE item.id=${item_id}`;
 
+        return await this.db.getFirstAsync(query) as Item;
     }
 
     public async getShoppingList(store?: string) {

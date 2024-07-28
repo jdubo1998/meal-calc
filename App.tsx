@@ -15,7 +15,10 @@ type RootStackParamList = {
     MealLog: undefined | {newLogItem: LogItem},
     ItemList: undefined,
     ShoppingList: undefined,
-    ItemNutrition: {item: Item}
+    ItemNutrition: {
+        item_id?: number
+        item?: Item
+    }
 };
 
 const STACK1 = createNativeStackNavigator<RootStackParamList>();

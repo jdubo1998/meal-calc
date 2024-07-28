@@ -43,7 +43,6 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     useEffect(() => {
         const getLog = async () => {
             const data = await DataManager.getInstance().getLogItemsDate(year, month, day);
-
             setMealLog(data);
         }
 
@@ -138,7 +137,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                                 data={filterItemsByMeal(mealLog, meal.item.id)}
                                 renderItem={item => 
                                     <TouchableOpacity onPress={() => {
-                                        navigation.navigate('ItemNutrition', {item: item.item});
+                                        navigation.navigate('ItemNutrition', {item_id: item.item.id});
                                     }}>
                                         <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
                                     </TouchableOpacity>
