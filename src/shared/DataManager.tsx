@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Milk, ProteinPowder, ReceiptMilk, LogMilk, Bacon, ReceiptProteinPowder, LogBacon } from '../../test/Testitems';
+import { Milk, ProteinPowder, ReceiptMilk, LogMilk, Bacon, ReceiptProteinPowder, LogBacon, LogProteinPowder } from '../../test/Testitems';
 
 export const fatGoal = 55;
 export const carbGoal = 145;
@@ -150,10 +150,8 @@ class DataManager {
         console.log();
     }
 
-    public async resetTestTables(table: string) {
-        console.log('***   Resetting Tables   ***');
-
-        console.log(`* Reset ${table} *`);
+    public async resetTestTable(table?: string) {
+        console.log(`***   Reset ${table}   ***`);
         await this.db.runAsync(`DROP TABLE IF EXISTS ${table}`);
         
         await this.createTables();
@@ -167,7 +165,7 @@ class DataManager {
             this.insertInto('receipt', ReceiptProteinPowder);
         } else if (table == 'meal_log') {
             this.insertInto('meal_log', LogMilk);
-            this.insertInto('meal_log', LogBacon);
+            this.insertInto('meal_log', LogProteinPowder);
         }
     }
 
@@ -193,44 +191,31 @@ class DataManager {
         console.log(result);
     }
 
-    public async updateRecord(table: string, obj: any, id: number) {
-        var query = `UPDATE ${table} SET `
-        var updates = '';
-
-        for (const key in obj) {
-            if (obj[key] != null) {
-                if (typeof obj[key] == 'string') {
-                    updates += key + '="' + obj[key] + '", '
-                } else {
-                    updates += key + "=" + obj[key] + ', '
-                }
-            }
-        }
-
-        query = `${query}${updates.substring(0, updates.length-2)} WHERE id=${id}`;
+    public async updateRecordValue(table: string, key: string, value: any, id: number) {
+        var query = `UPDATE ${table} SET ${key}=${typeof value == 'string' ? `"${value}"` : value} WHERE id=${id}`;
 
         const result = await this.db.runAsync(query);
-        console.log(result);
+        console.log(result.lastInsertRowId, result.changes);
     }
 
-    public async updateLogItem(oldItem: any, newItem: any) {
+    public async updateLogItem(id: number, newItem: LogItem) {
         var query = `UPDATE meal_log SET `
         var updates = '';
 
+        // const keys = ['id', 'source', 'item_id', 'qty', 'unit', 'meal', 'date_ns'];
+        const keys: LogItem = {id: null, source: 0, item_id: 0, qty: 0, unit: null, meal: null, date_ns: 0};
+
         for (const key in newItem) {
-            if (newItem[key] != null) {
-                if (typeof newItem[key] == 'string') {
-                    updates += key + '="' + newItem[key] + '", '
-                } else {
-                    updates += key + "=" + newItem[key] + ', '
-                }
+            if (key in keys) {
+                updates += key + '="' + (newItem as any)[key] + '", '
             }
         }
 
-        query = `${query}${updates.substring(0, updates.length-2)} WHERE id=${oldItem.id} AND item_id=${oldItem.item_id}`;
+        query = `${query}${updates.substring(0, updates.length-2)} WHERE id=${id} OR item_id=${newItem.item_id}`;
 
+        // console.log(query);
         const result = await this.db.runAsync(query);
-        console.log(result);
+        console.log(result.lastInsertRowId, result.changes);
     }
 
     public async printTable(table: string) {
@@ -323,11 +308,29 @@ class DataManager {
      * @returns The meal items logged for a given date.
      */
     public async getLogItemsDate(year: number, month: number, day: number) {
-        const id1 = this.logId(year, month, day, 1);
-        const id4 = this.logId(year, month, day, 4);
+        const id1 = this.logId(year, month, day, 1)*1000; // <Year>-<Month>-<Date>-<Meal>-000
+        const id4 = this.logId(year, month, day, 4)*1000+999; // <Year>-<Month>-<Date>-<Meal>-999
 
         const logQuery = `
-            SELECT item.id, meal_log.meal, item.name, meal_log.qty, ROUND(receipt.price/receipt.qty, 2) as price, item.cals, item.carbs, item.fats, item.prot, meal_log.date_ns FROM meal_log
+            SELECT
+                meal_log.id,
+                meal_log.item_id,
+                meal_log.meal,
+                item.name,
+                ROUND(receipt.price/receipt.qty, 2) as price,
+                item.cals,
+                item.carbs,
+                item.fats,
+                item.prot,
+                meal_log.date_ns,
+                item.unit_type,
+                meal_log.qty,
+                CASE
+                    WHEN item.unit_type IS 0 THEN item.serv_unit
+                    WHEN item.unit_type IS 1 THEN item.weight_unit
+                    ELSE item.vol_unit
+                    END AS unit
+            FROM meal_log
             JOIN item
             ON meal_log.item_id = item.id
             LEFT JOIN receipt
@@ -347,11 +350,13 @@ class DataManager {
      * @param source (0 - User Input, 1 - Google FIT)
      * @returns 
      */
+    // TODO: Pass a LogItem into the method instead to make sure all variables are accounted for.
     public async logItem(name: string, meal: number, cals: number, dateNs: number, source: number) {
         const month = new Date(dateNs/1000000).getMonth()+1;
         const day = new Date(dateNs/1000000).getDate();
         const year = new Date(dateNs/1000000).getFullYear();
 
+        // TODO: Autoincrement ID based on next log item meal.
         const id = this.logId(year, month, day, meal);
 
         /* Get the item id using the name of the item being logged. */

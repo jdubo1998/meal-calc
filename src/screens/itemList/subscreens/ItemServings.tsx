@@ -1,9 +1,38 @@
 import { View, Text, StyleSheet, TextInput } from "react-native";
-import DataManager, { Item, fatGoal, carbGoal, protGoal } from "../../../shared/DataManager";
-import { ItemNutritionRouteProp } from "../../../../App";
-import { useEffect, useState } from "react";
+import DataManager, { Item, fatGoal, carbGoal, protGoal, LogItem } from "../../../shared/DataManager";
+import { ItemServingRouteProp } from "../../../../App";
+import React, { useEffect, useState } from "react";
 
 const types = ['Serving', 'Weight', 'Volume'];
+
+type QtyEditorProps = {
+    type: number,
+    qty: number,
+    unit: string,
+    onQtyChange: (qty: number) => void,
+    onUnitChange?: (text: string) => void
+}
+
+const QtyEditor = (props: QtyEditorProps) => {
+    return (
+        <View>
+            <View style={styles.nutritionbar}>
+                <Text style={[styles.whitetxt, {flex: 1}]}>{types[props.type]}</Text>
+                <TextInput style={[styles.whitetxt, {flex: 1}]} keyboardType='decimal-pad' onChangeText={(text) => {
+                    try {
+                        const qty = Number.parseFloat(text);
+
+                        props.onQtyChange(qty);
+                    } catch {}
+                }}>{props.qty}</TextInput>
+                <Text style={[styles.whitetxt, {flex: 1}]}>{props.unit}</Text>
+
+                {/* // TODO: Allow for you to change the unit type. */}
+                {/* <TextInput style={[styles.whitetxt, {flex: 1}]} onChangeText={(text) => props.onUnitChange(text)}>{props.unit}</TextInput> */}
+            </View>
+        </View>
+    );
+}
 
 type ServingEditProps = {
     type: number,
@@ -16,9 +45,9 @@ const ServingEdit = (props: ServingEditProps) => {
         <View style={{flex: 1}}>
             <Text style={styles.greytxt}>{types[props.type]}</Text>
             <View style={{flexDirection: 'row'}}>
-                <TextInput style={[styles.whitetxt, {flex: 2}]}>{props.qty}</TextInput>
+                <Text style={[styles.whitetxt, {flex: 2}]}>{props.qty}</Text>
                 {/* // TODO: Make this a drop down instead of textinput. */}
-                <TextInput style={[styles.whitetxt, {flex: 3}]}>{props.unit}</TextInput>
+                <Text style={[styles.whitetxt, {flex: 3}]}>{props.unit}</Text>
             </View>
         </View>
     );
@@ -52,7 +81,7 @@ const CaloriesRow = (props: CaloriesRowProps) => {
     return (
         <View style={styles.nutritionbar}>
             <Text style={[styles.lgwhitetxt, {flex: 8}]}>Calories</Text>
-            <TextInput style={[styles.lgwhitetxt, {flex: 2, paddingEnd: 10, textAlign: "right"}]}>{props.value}</TextInput>
+            <Text style={[styles.lgwhitetxt, {flex: 2, paddingEnd: 10, textAlign: "right"}]}>{props.value}</Text>
         </View>
     );
 }
@@ -62,10 +91,13 @@ type NutritionRowProps = {
     item: Item,
     attr: string,
     unit: string,
-    subvalue?: string
+    subvalue?: string,
+    servMult?: number
 }
 
 const NutritionRow = (props: NutritionRowProps) => {
+    const servMult = props.servMult ? props.servMult : 1;
+
     return (
         <View style={styles.nutritionbar}>
             <Text style={[styles.whitetxt, {flex: 12}]}>{props.label}</Text>
@@ -76,28 +108,26 @@ const NutritionRow = (props: NutritionRowProps) => {
                     (props.item as any)[props.attr] = Number.parseFloat(text);
                 } catch (e) {}
             }}>
-                {(props.item as any)[props.attr]}
+                {(props.item as any)[props.attr] * servMult}
             </TextInput>
             <Text style={[styles.whitetxt, {flex: 2}]}>{props.unit}</Text>
         </View>
     );
 }
 
-const ItemNutrition = ( {route, navigation}: ItemNutritionRouteProp ) => {
+const ItemServing = ( {route, navigation}: ItemServingRouteProp ) => {
     const [item, setItem] = useState<Item>();
     const [qty, setQty] = useState<number>(1);
     const [unit, setUnit] = useState<string>();
+
+    // console.log(route.params.logItem);
 
     useEffect(() => {
         const getItem = async (item_id: number) => {
             setItem(await DataManager.getInstance().getItem(item_id));
         };
 
-        if (route.params.item != undefined) {
-            setItem(route.params.item);
-        } else if (route.params.item_id != undefined) {
-            getItem(route.params.item_id);
-        }
+        getItem(route.params.logItem.item_id);
     }, []);
 
     if (item == undefined) {
@@ -110,41 +140,45 @@ const ItemNutrition = ( {route, navigation}: ItemNutritionRouteProp ) => {
                 <View style={{flexDirection: 'row'}}>
                     <TextInput style={[styles.lgwhitetxt, {flex: 1, paddingLeft: 10}]}>{item.name}</TextInput>
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={() => {
-                        // console.log(route.params.item);
+                        route.params.logItem.qty = qty;
+                        navigation.navigate('MealLog', {newLogItem: route.params.logItem});
                     }}>Save</Text>
                 </View>
             </View>
             <View style={styles.mainscreen}>
                 <View style={styles.nutritioncard}>
-                    <ServingRow 
-                        serv_qty={item.serv_qty}
-                        serv_unit={item.serv_unit}
-                        weight_qty={item.weight_qty}
-                        weight_unit={item.weight_unit}
-                        vol_qty={item.vol_qty}
-                        vol_unit={item.vol_unit} />
+                    {route.params.logItem ? <QtyEditor
+                        type={(route.params.logItem as any).unit_type}
+                        qty={route.params.logItem.qty}
+                        unit={`${route.params.logItem.unit}`}
+                        onQtyChange={(qty) => !Number.isNaN(qty) ? setQty(qty) : setQty(1)} /> : <View/>}
 
                     <View style={styles.nutritionsuperthickseperator} />
-                    <CaloriesRow value={item.cals}/>
+                    <CaloriesRow value={item.cals * qty}/>
                     <View style={styles.nutritionthickseperator} />
                     <Text />
-                    <NutritionRow label="Total Fat" item={item} attr={"fats"} unit="g" subvalue={(item.fats*100/fatGoal).toPrecision(2)} />
+                    <NutritionRow servMult={qty} label="Total Fat" item={item} attr={"fats"} unit="g" subvalue={(item.fats*qty*100/fatGoal).toPrecision(2)} />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Saturated Fat" item={item} attr={"sat_fat"} unit="g" />
+                    <NutritionRow servMult={qty} label="       Saturated Fat" item={item} attr={"sat_fat"} unit="g" />
                     
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Cholesterol" item={item} attr={"cholest"} unit="mg" />
+                    <NutritionRow servMult={qty} label="Cholesterol" item={item} attr={"cholest"} unit="mg" />
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Sodium" item={item} attr={"sodium"} unit="mg" />
+                    <NutritionRow servMult={qty} label="Sodium" item={item} attr={"sodium"} unit="mg" />
 
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Total Carbohydrates" item={item} attr={"carbs"} unit="g" subvalue={(item.carbs*100/carbGoal).toPrecision(2)} />
+                    <NutritionRow servMult={qty} label="Total Carbohydrates" item={item} attr={"carbs"} unit="g" subvalue={(item.carbs*qty*100/carbGoal).toPrecision(2)} />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Dietary Fiber" item={item} attr={"fiber"} unit="g" />
+                    <NutritionRow servMult={qty} label="       Dietary Fiber" item={item} attr={"fiber"} unit="g" />
                     <View style={[{marginStart:30}, styles.nutritionseperator]} />
-                    <NutritionRow label="       Total Sugars" item={item} attr={"sugar"} unit="g" />
+                    <NutritionRow servMult={qty} label="       Total Sugars" item={item} attr={"sugar"} unit="g" />
                     <View style={styles.nutritionseperator} />
-                    <NutritionRow label="Protein" item={item} attr={"prot"} unit="g" subvalue={(item.prot*100/protGoal).toPrecision(2)} />
+                    <NutritionRow servMult={qty} label="Protein" item={item} attr={"prot"} unit="g" subvalue={(item.prot*qty*100/protGoal).toPrecision(2)} />
+                    {route.params.mealLogProps ? <QtyEditor
+                        type={route.params.mealLogProps.unit_type}
+                        qty={route.params.mealLogProps.qty}
+                        unit={route.params.mealLogProps.unit}
+                        onQtyChange={(qty) => setQty(qty)} /> : <View/>}
                 </View>
             </View>
         </View>
@@ -199,4 +233,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default ItemNutrition;
+export default ItemServing;

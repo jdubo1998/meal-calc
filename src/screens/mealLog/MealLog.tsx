@@ -1,11 +1,12 @@
 import { Button, FlatList, StyleSheet, Text, TouchableOpacity, View, DeviceEventEmitter } from 'react-native';
 import {useEffect, useState} from 'react';
-import LogItem from './components/LogItem';
 import LogHeader from './components/LogHeader';
 import { isLoggedIn } from '../components/LoginHeader';
 import LoginHeader from '../components/LoginHeader';
 import DataManager from '../../shared/DataManager';
 import { MealLogRouteProp } from '../../../App';
+import { useFocusEffect } from '@react-navigation/native';
+import LogItem from './components/LogItem';
 
 // Web Client ID: 768950932318-pnu9uiacmbvsssanbhujfmd68r4ii5rq.apps.googleusercontent.com
 // Android Client ID: 768950932318-9ddatcluj23i17ijf28re6dcee5b9npu.apps.googleusercontent.com
@@ -34,6 +35,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     const [mealLog, setMealLog] = useState<any[]>([]);
     // const [curDate, setCurDate] = useState<number>(Date.now());
     const [curDate, setCurDate] = useState<number>(1716163200000);
+    const [savedQty, setSavedQty] = useState<number>(0);
 
     const year = new Date(curDate).getFullYear();
     const month = new Date(curDate).getMonth()+1;
@@ -41,6 +43,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
 
     // Execute on first mount and when the curDate gets updated.
     useEffect(() => {
+        // DataManager.getInstance().printTable('meal_log');
         const getLog = async () => {
             const data = await DataManager.getInstance().getLogItemsDate(year, month, day);
             setMealLog(data);
@@ -52,7 +55,16 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
         }
     }, [curDate]);
 
-    console.log(route);
+    useFocusEffect(() => {
+        // DataManager.getInstance().updateRecordValue('meal_log', 'id', 202405191002, 202405191);
+        // DataManager.getInstance().printTable('meal_log');
+        // DataManager.getInstance().resetTestTable('meal_log');
+
+        if (route.params?.newLogItem && route.params.newLogItem.qty != savedQty) {
+            DataManager.getInstance().updateLogItem(route.params.newLogItem.id!, route.params.newLogItem);
+            setSavedQty(route.params.newLogItem.qty);
+        }
+    });
 
     const calLimit = 1700;
     const limitPercentage = 75;
@@ -133,11 +145,12 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                                 cals={totalFilteredItemsByMeal(mealLog, meal.item.id, 'cals')} />
                             <FlatList
                                 style={{flexGrow: 0}}
-                                keyExtractor={item => item.id}
+                                keyExtractor={item => item.item_id}
                                 data={filterItemsByMeal(mealLog, meal.item.id)}
                                 renderItem={item => 
                                     <TouchableOpacity onPress={() => {
-                                        navigation.navigate('ItemNutrition', {item_id: item.item.id});
+                                        // navigation.navigate('ItemServing', {item_id: item.item.id, mealLogProps: {unit_type: item.item.unit_type, qty: item.item.qty, unit: item.item.unit}});
+                                        navigation.navigate('ItemServing', {logItem: item.item});
                                     }}>
                                         <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
                                     </TouchableOpacity>

@@ -9,6 +9,7 @@ import ItemNutrition from './src/screens/itemList/subscreens/ItemNutrition';
 import { Item, LogItem } from './src/shared/DataManager';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import ItemServing from './src/screens/itemList/subscreens/ItemServings';
 
 type RootStackParamList = {
     PantryLog: undefined,
@@ -16,8 +17,13 @@ type RootStackParamList = {
     ItemList: undefined,
     ShoppingList: undefined,
     ItemNutrition: {
-        item_id?: number
-        item?: Item
+        item_id?: number,
+        item?: Item,
+        mealLogProps?: any
+    },
+    ItemServing: {
+        logItem: LogItem,
+        mealLogProps?: any
     }
 };
 
@@ -29,6 +35,7 @@ export type MealLogRouteProp = NativeStackScreenProps<RootStackParamList, 'MealL
 export type ItemListRouteProp = NativeStackScreenProps<RootStackParamList, 'ItemList'>;
 export type ShoppingListRouteProp = NativeStackScreenProps<RootStackParamList, 'ShoppingList'>;
 export type ItemNutritionRouteProp = NativeStackScreenProps<RootStackParamList, 'ItemNutrition'>;
+export type ItemServingRouteProp = NativeStackScreenProps<RootStackParamList, 'ItemServing'>;
 
 const STACK1Screen = () => {
     return (
@@ -44,6 +51,11 @@ const STACK1Screen = () => {
             <STACK1.Screen
                 name='ItemNutrition'
                 component={ItemNutrition}
+                initialParams={{}}
+                options={{headerShown: false}} />
+            <STACK1.Screen
+                name='ItemServing'
+                component={ItemServing}
                 initialParams={{}}
                 options={{headerShown: false}} />
         </STACK1.Navigator>
