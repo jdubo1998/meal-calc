@@ -140,8 +140,23 @@ const ItemServing = ( {route, navigation}: ItemServingRouteProp ) => {
                 <View style={{flexDirection: 'row'}}>
                     <TextInput style={[styles.lgwhitetxt, {flex: 1, paddingLeft: 10}]}>{item.name}</TextInput>
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={() => {
-                        route.params.logItem.qty = qty;
-                        navigation.navigate('MealLog', {newLogItem: route.params.logItem});
+                        const newLogItem: LogItem = {
+                            id: route.params.logItem.id,
+                            source: route.params.logItem.source,
+                            item_id: route.params.logItem.item_id,
+                            qty: qty,
+                            unit: route.params.logItem.unit,
+                            meal: route.params.logItem.meal,
+                            date_ns: route.params.logItem.date_ns
+                        };
+
+                        if (route.params.newLogItemDate) {
+                            DataManager.getInstance().addLogItem(newLogItem, route.params.newLogItemDate);
+                        } else if (qty != route.params.logItem.qty && route.params.logItem.id) {
+                            DataManager.getInstance().updateLogItem(route.params.logItem.id, newLogItem);
+                        }
+
+                        navigation.navigate('MealLog');
                     }}>Save</Text>
                 </View>
             </View>
@@ -174,11 +189,6 @@ const ItemServing = ( {route, navigation}: ItemServingRouteProp ) => {
                     <NutritionRow servMult={qty} label="       Total Sugars" item={item} attr={"sugar"} unit="g" />
                     <View style={styles.nutritionseperator} />
                     <NutritionRow servMult={qty} label="Protein" item={item} attr={"prot"} unit="g" subvalue={(item.prot*qty*100/protGoal).toPrecision(2)} />
-                    {route.params.mealLogProps ? <QtyEditor
-                        type={route.params.mealLogProps.unit_type}
-                        qty={route.params.mealLogProps.qty}
-                        unit={route.params.mealLogProps.unit}
-                        onQtyChange={(qty) => setQty(qty)} /> : <View/>}
                 </View>
             </View>
         </View>

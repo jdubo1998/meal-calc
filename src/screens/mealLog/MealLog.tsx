@@ -13,10 +13,10 @@ import LogItem from './components/LogItem';
 // port: 
 
 const meals = [
-    {id: "0", name: "Breakfast"},
-    {id: "1", name: "Lunch"},
-    {id: "2", name: "Dinner"},
-    {id: "3", name: "Snacks"}
+    {id: "1", name: "Breakfast"},
+    {id: "2", name: "Lunch"},
+    {id: "3", name: "Dinner"},
+    {id: "4", name: "Snacks"}
 ]
 
 const filterItemsByMeal = (mealLog: any[], meal: string): any[] => {
@@ -41,9 +41,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     const month = new Date(curDate).getMonth()+1;
     const day = new Date(curDate).getDate();
 
-    // Execute on first mount and when the curDate gets updated.
-    useEffect(() => {
-        // DataManager.getInstance().printTable('meal_log');
+    const updateMealLog = () => {
         const getLog = async () => {
             const data = await DataManager.getInstance().getLogItemsDate(year, month, day);
             setMealLog(data);
@@ -53,17 +51,19 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
         if (isLoggedIn()) {
             getLog();
         }
+    }
+
+
+    /* Execute on first mount and when the curDate gets updated. */
+    useEffect(() => {
+        // DataManager.getInstance().printTable('meal_log');
+        updateMealLog();
     }, [curDate]);
 
+    /* Runs every time the MealLog screen is returned to. */
     useFocusEffect(() => {
-        // DataManager.getInstance().updateRecordValue('meal_log', 'id', 202405191002, 202405191);
         // DataManager.getInstance().printTable('meal_log');
-        // DataManager.getInstance().resetTestTable('meal_log');
-
-        if (route.params?.newLogItem && route.params.newLogItem.qty != savedQty) {
-            DataManager.getInstance().updateLogItem(route.params.newLogItem.id!, route.params.newLogItem);
-            setSavedQty(route.params.newLogItem.qty);
-        }
+        updateMealLog();
     });
 
     const calLimit = 1700;
@@ -148,16 +148,19 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                                 keyExtractor={item => item.item_id}
                                 data={filterItemsByMeal(mealLog, meal.item.id)}
                                 renderItem={item => 
-                                    <TouchableOpacity onPress={() => {
-                                        // navigation.navigate('ItemServing', {item_id: item.item.id, mealLogProps: {unit_type: item.item.unit_type, qty: item.item.qty, unit: item.item.unit}});
-                                        navigation.navigate('ItemServing', {logItem: item.item});
-                                    }}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            /* Open the ItemServing screen to the item. */
+                                            navigation.navigate('ItemServing', {logItem: item.item});
+                                        }}>
                                         <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
                                     </TouchableOpacity>
                                 } />
 
-                            {/* When you click on the Add + button, you will be taken to the item list to select an item to add to the meal plan. */}
-                            <Text style={{marginLeft: 10, color: '#B0B0B0'}} onPress={() => { navigation.navigate('ItemList'); }}>
+                            <Text style={{marginLeft: 10, color: '#B0B0B0'}} onPress={() => {
+                                /* When you click on the Add + button, you will be taken to the item list to select an item to add to the meal plan. */
+                                navigation.navigate('ItemList', {year: year, month: month, day: day, meal: Number.parseInt(meal.item.id)}); 
+                            }}>
                                 Add +
                             </Text>
                             <View style={{padding: 10}}/>

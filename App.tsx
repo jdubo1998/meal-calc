@@ -6,15 +6,22 @@ import MealLog from './src/screens/mealLog/MealLog';
 import ItemList from './src/screens/itemList/ItemList';
 import ShoppingList from './src/screens/shoppingList/ShoppingList';
 import ItemNutrition from './src/screens/itemList/subscreens/ItemNutrition';
-import { Item, LogItem } from './src/shared/DataManager';
+import { Item, LogItem, NewLogItemDate } from './src/shared/DataManager';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ItemServing from './src/screens/itemList/subscreens/ItemServings';
 
 type RootStackParamList = {
     PantryLog: undefined,
-    MealLog: undefined | {newLogItem: LogItem},
-    ItemList: undefined,
+    MealLog: undefined | {
+        newLogItem: LogItem
+    },
+    ItemList: undefined | {
+        year: number,
+        month: number,
+        day: number,
+        meal: number
+    },
     ShoppingList: undefined,
     ItemNutrition: {
         item_id?: number,
@@ -23,7 +30,7 @@ type RootStackParamList = {
     },
     ItemServing: {
         logItem: LogItem,
-        mealLogProps?: any
+        newLogItemDate?: NewLogItemDate
     }
 };
 

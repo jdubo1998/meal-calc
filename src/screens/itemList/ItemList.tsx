@@ -23,10 +23,10 @@ const ItemList = ( {route, navigation}: ItemListRouteProp) => {
     useEffect(() => {
         const getFullItemList = async () => {
             fullItemList = await DataManager.getInstance().getAllItems();
+            setItemList(fullItemList);
         }
 
         getFullItemList();
-        setItemList(fullItemList);
     }, []);
 
     return (
@@ -56,18 +56,30 @@ const ItemList = ( {route, navigation}: ItemListRouteProp) => {
                     keyExtractor={item => `${item.id}`}
                     data={itemList}
                     renderItem={item => // Pantry Item
-                        <TouchableOpacity onPress={() => {
-                            // TODO: Add modal for adding information.
-                            navigation.navigate('MealLog', {newLogItem: {
-                                id: null,
-                                source: 0,
-                                item_id: item.item.id!,
-                                qty: 1,
-                                unit: 'cup',
-                                meal: 2,
-                                date_ns: 1414
-                            }});
-                        }}>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                if (!route.params) {
+                                    return
+                                }
+
+                                navigation.navigate('ItemServing', {
+                                    logItem: {
+                                        id: null,
+                                        source: 0,
+                                        item_id: item.item.id!,
+                                        qty: DataManager.getInstance().getDefQty(item.item), // TODO: Use last quantity used.
+                                        unit: DataManager.getInstance().getDefUnit(item.item), // TODO: Use last unit used.
+                                        meal: route.params ? route.params.meal : null,
+                                        date_ns: Date.now() * 1000000
+                                    },
+                                    newLogItemDate: {
+                                        year: route.params.year,
+                                        month: route.params.month,
+                                        day: route.params.day,
+                                        meal: route.params.meal
+                                    }
+                                });
+                            }}>
                             <ItemItem name={item.item.name}/>
                         </TouchableOpacity>
                     } 

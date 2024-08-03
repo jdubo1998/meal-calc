@@ -34,6 +34,13 @@ export interface Item {
     sugar: number
 }
 
+export interface NewLogItemDate {
+    year: number,
+    month: number,
+    day: number,
+    meal: number
+}
+
 export interface LogItem {
     id: number | null,
     source: number,
@@ -150,6 +157,30 @@ class DataManager {
         console.log();
     }
 
+    public getDefQty(item: Item): number {
+        if (item.unit_type == 0 && item.serv_qty) {
+            return item.serv_qty;
+        } else if (item.unit_type == 1 && item.weight_qty) {
+            return item.weight_qty;
+        } else if (item.unit_type == 2 && item.vol_qty) {
+            return item.vol_qty;
+        }
+
+        return 1;
+    }
+
+    public getDefUnit(item: Item): string {
+        if (item.unit_type == 0 && item.serv_unit) {
+            return item.serv_unit;
+        } else if (item.unit_type == 1 && item.weight_unit) {
+            return item.weight_unit;
+        } else if (item.unit_type == 2 && item.vol_unit) {
+            return item.vol_unit;
+        }
+
+        return '';
+    }
+
     public async resetTestTable(table?: string) {
         console.log(`***   Reset ${table}   ***`);
         await this.db.runAsync(`DROP TABLE IF EXISTS ${table}`);
@@ -198,6 +229,41 @@ class DataManager {
         console.log(result.lastInsertRowId, result.changes);
     }
 
+    public async nextLogItemId(year: number, month: number, day: number, meal: number): Promise<number> {
+        const id001 = this.logId(year, month, day, meal)*1000; // <Year>-<Month>-<Date>-<Meal>-000
+        const id999 = this.logId(year, month, day, meal)*1000+999; // <Year>-<Month>-<Date>-<Meal>-999
+        const query = `SELECT MAX(meal_log.id)+1 as id FROM meal_log WHERE meal_log.id >= ${id001} AND meal_log.id <= ${id999}`;
+
+        const result = await this.db.getFirstAsync(query) as any;
+
+        if (result.id) {
+            return result.id;
+        }
+
+        return this.logId(year, month, day, meal)*1000+1;
+    }
+
+    public async addLogItem(item: LogItem, newLogItemDate: NewLogItemDate) {
+        var columns = '';
+        var values = '';
+        item.id = await this.nextLogItemId(newLogItemDate.year, newLogItemDate.month, newLogItemDate.day, newLogItemDate.meal);
+
+        for (const key in item) {
+            columns += key + ', '
+
+            if (typeof (item as any)[key] == 'string') {
+                values += '"' + (item as any)[key] + '", ';
+            } else {
+                values += (item as any)[key] + ', ';
+            }
+        }
+
+        const query = `INSERT INTO meal_log (${columns.substring(0, columns.length-2)}) VALUES (${values.substring(0, values.length-2)})`;
+
+        const result = await this.db.runAsync(query);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId}         number of row changes: ${result.changes}`);
+    }
+
     public async updateLogItem(id: number, newItem: LogItem) {
         var query = `UPDATE meal_log SET `
         var updates = '';
@@ -215,7 +281,7 @@ class DataManager {
 
         // console.log(query);
         const result = await this.db.runAsync(query);
-        console.log(result.lastInsertRowId, result.changes);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId}         number of row changes: ${result.changes}`);
     }
 
     public async printTable(table: string) {
