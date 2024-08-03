@@ -152,6 +152,12 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                                         onPress={() => {
                                             /* Open the ItemServing screen to the item. */
                                             navigation.navigate('ItemServing', {logItem: item.item});
+                                        }}
+                                        onLongPress={() => {
+                                            /* Remove the item from the meal log. */
+                                            // TODO: Add modal for removing item.
+                                            DataManager.getInstance().deleteLogItem(item.item.id);
+                                            updateMealLog();
                                         }}>
                                         <LogItem name={item.item.name} qty={item.item.qty} price={item.item.price*item.item.qty} cals={item.item.cals*item.item.qty} />
                                     </TouchableOpacity>

@@ -261,7 +261,7 @@ class DataManager {
         const query = `INSERT INTO meal_log (${columns.substring(0, columns.length-2)}) VALUES (${values.substring(0, values.length-2)})`;
 
         const result = await this.db.runAsync(query);
-        console.log(`lastInsertRowId: ${result.lastInsertRowId}         number of row changes: ${result.changes}`);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
     }
 
     public async updateLogItem(id: number, newItem: LogItem) {
@@ -281,7 +281,14 @@ class DataManager {
 
         // console.log(query);
         const result = await this.db.runAsync(query);
-        console.log(`lastInsertRowId: ${result.lastInsertRowId}         number of row changes: ${result.changes}`);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
+    }
+
+    public async deleteLogItem(id: number) {
+        const query = `DELETE FROM meal_log WHERE meal_log.id=${id}`
+
+        const result = await this.db.runAsync(query);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
     }
 
     public async printTable(table: string) {
