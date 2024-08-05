@@ -60,12 +60,6 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
         updateMealLog();
     }, [curDate]);
 
-    /* Runs every time the MealLog screen is returned to. */
-    useFocusEffect(() => {
-        // DataManager.getInstance().printTable('meal_log');
-        updateMealLog();
-    });
-
     const calLimit = 1700;
     const limitPercentage = 75;
 
@@ -165,7 +159,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
 
                             <Text style={{marginLeft: 10, color: '#B0B0B0'}} onPress={() => {
                                 /* When you click on the Add + button, you will be taken to the item list to select an item to add to the meal plan. */
-                                navigation.navigate('ItemList', {year: year, month: month, day: day, meal: Number.parseInt(meal.item.id)}); 
+                                navigation.navigate('ItemList', {year: year, month: month, day: day, meal: Number.parseInt(meal.item.id)});
                             }}>
                                 Add +
                             </Text>
