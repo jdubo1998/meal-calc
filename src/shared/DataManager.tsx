@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Milk, ProteinPowder, ReceiptMilk, LogMilk, Bacon, ReceiptProteinPowder, LogBacon, LogProteinPowder } from '../../test/Testitems';
+import { Milk, ProteinPowder, ReceiptMilk1, ReceiptMilk2, LogMilk, Bacon, ReceiptProteinPowder, LogBacon, LogProteinPowder } from '../../test/Testitems';
 
 export const fatGoal = 55;
 export const carbGoal = 145;
@@ -32,6 +32,13 @@ export interface Item {
     sodium: number,
     fiber: number,
     sugar: number
+}
+
+export interface NewReceiptDate {
+    year: number,
+    month: number,
+    day: number,
+    store?: number
 }
 
 export interface NewLogItemDate {
@@ -188,16 +195,19 @@ class DataManager {
         await this.createTables();
 
         if (table == 'item') {
-            this.insertInto('item', Milk);
-            this.insertInto('item', ProteinPowder);
-            this.insertInto('item', Bacon);
+            await this.insertInto('item', Milk);
+            await this.insertInto('item', ProteinPowder);
+            await this.insertInto('item', Bacon);
         } else if (table == 'receipt') {
-            this.insertInto('receipt', ReceiptMilk);
-            this.insertInto('receipt', ReceiptProteinPowder);
+            await this.insertInto('receipt', ReceiptMilk1);
+            await this.insertInto('receipt', ReceiptMilk2);
+            await this.insertInto('receipt', ReceiptProteinPowder);
         } else if (table == 'meal_log') {
-            this.insertInto('meal_log', LogMilk);
-            this.insertInto('meal_log', LogProteinPowder);
+            await this.insertInto('meal_log', LogMilk);
+            await this.insertInto('meal_log', LogProteinPowder);
         }
+
+        this.printTable(`${table}`);
     }
 
     public async insertInto(table: string, obj: any) {
@@ -219,7 +229,7 @@ class DataManager {
         query = `${query}${columns.substring(0, columns.length-2)}) VALUES (${values.substring(0, values.length-2)})`
 
         const result = await this.db.runAsync(query);
-        console.log(result);
+        console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
     }
 
     public async updateRecordValue(table: string, key: string, value: any, id: number) {
@@ -243,10 +253,10 @@ class DataManager {
         return this.logId(year, month, day, meal)*1000+1;
     }
 
-    public async addLogItem(item: LogItem, newLogItemDate: NewLogItemDate) {
+    public async addLogItem(item: LogItem, date: NewLogItemDate) {
         var columns = '';
         var values = '';
-        item.id = await this.nextLogItemId(newLogItemDate.year, newLogItemDate.month, newLogItemDate.day, newLogItemDate.meal);
+        item.id = await this.nextLogItemId(date.year, date.month, date.day, date.meal);
 
         for (const key in item) {
             columns += key + ', '
@@ -279,7 +289,6 @@ class DataManager {
 
         query = `${query}${updates.substring(0, updates.length-2)} WHERE id=${id} OR item_id=${newItem.item_id}`;
 
-        // console.log(query);
         const result = await this.db.runAsync(query);
         console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
     }
@@ -289,6 +298,78 @@ class DataManager {
 
         const result = await this.db.runAsync(query);
         console.log(`lastInsertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
+    }
+
+    /**
+     * @param year The year of logged item.
+     * @param month The month of logged item.
+     * @param day The day of the logged item.
+     * @param store The store number incremented of that given day. If no store is input, then treating id as new store for day.
+     * @returns A log ID for the meal item using the date and meal.
+     */
+    public receiptId(year: number, month: number, day: number, store: number): number {
+        return Number.parseInt(`${year}${`${month}`.padStart(2, '0')}${`${day}`.padStart(2, '0')}${`${store}`.padStart(2, '0')}`);
+    }
+
+    public async nextReceiptId(year: number, month: number, day: number, store?: number): Promise<number> {
+        var query: string;
+
+        if (store) {
+            const id001 = this.receiptId(year, month, day, store);
+            const id999 = this.receiptId(year, month, day, store);
+            query = `SELECT MAX(receipt.id)+1 as id FROM receipt WHERE receipt.id >= ${id001} AND receipt.id <= ${id999}`;
+        } else {
+            const id01 = this.receiptId(year, month, day, 0);
+            const id99 = this.receiptId(year, month, day, 99);
+            query = `SELECT ((MAX(receipt.id)/1000)+1)*1000+1 as id FROM receipt WHERE receipt.id >= ${id01}000 AND receipt.id <= ${id99}999`;
+        }
+
+        const result = await this.db.getFirstAsync(query) as any;
+
+        if (result.id) {
+            return result.id;
+        }
+
+        return this.receiptId(year, month, day, 1)*1000+1;
+    }
+
+    public async addReceipts(receipts: Receipt[], date: NewReceiptDate) {
+        var nextId = await this.nextReceiptId(date.year, date.month, date.day, date.store);
+        const dateMs = Date.now();
+        // const store = Math.floor((nextId % 100000)/1000); // Gets the store number.
+
+        if (receipts.length == 0) {
+            return;
+        }
+
+        var query = '';
+
+        receipts.forEach((receipt) => {
+            if (receipt) {
+                var values = '';
+                var columns = '';
+
+                receipt.id = nextId;
+                receipt.date_ms = dateMs;
+
+                for (var column in receipt) {
+                    columns += column + ', ';
+
+                    if (typeof (receipt as any)[column] == 'string') {
+                        values += '"' + (receipt as any)[column] + '", ';
+                    } else {
+                        values += (receipt as any)[column] + ', ';
+                    }
+                }
+
+                console.log(`${receipt.id}   ${`${receipt.store}`.padEnd(10, ' ')}   ${`${receipt.item_id}`.padEnd(3, ' ')}   ${`${receipt.qty}`.padEnd(3, ' ')} ${` ${receipt.unit}`.padEnd(10, ' ')}   $${receipt.price}`);
+
+                query += `INSERT INTO receipt (${`${columns}`.substring(0, columns.length-2)}) VALUES (${`${values}`.substring(0, values.length-2)});\n`
+                nextId += 1;
+            }
+        });
+        
+        await this.db.execAsync(query);
     }
 
     public async printTable(table: string) {
@@ -406,10 +487,15 @@ class DataManager {
             FROM meal_log
             JOIN item
             ON meal_log.item_id = item.id
-            LEFT JOIN receipt
+            LEFT JOIN (
+                SELECT max(receipt.id), * FROM receipt
+                GROUP BY receipt.item_id
+            ) AS receipt
             ON receipt.item_id = item.id
             WHERE meal_log.id >= ${id1} AND meal_log.id <= ${id4};
         `
+
+        console.log(logQuery);
 
         const allRows = await this.db.getAllAsync(logQuery);
         return allRows;
@@ -556,9 +642,9 @@ class DataManager {
 
     public async getShoppingList(store?: string) {
         const shoppingList = [
-            {name: 'Critical', cost: 0, items: new Array<any>()},
-            {name: 'Low', cost: 0, items: new Array<any>()},
-            {name: 'Extra', cost: 0, items: new Array<any>()}
+            {name: 'Critical', hidden: false, cost: 0, items: new Array<any>()},
+            {name: 'Low', hidden: false, cost: 0, items: new Array<any>()},
+            {name: 'Extra', hidden: true, cost: 0, items: new Array<any>()}
         ];
 
         for (var i = 0; i < 10; i++) {
@@ -584,6 +670,7 @@ class DataManager {
                     END AS off,
                 SUM(meal_log.qty) as meallog_total_qty,
                 meal_log.unit as meallog_total_unit,
+                receipt.tax_mult,
                 receipt.price as receipt_price,
                 receipt.qty as receipt_qty,
                 receipt.unit as receipt_unit,
@@ -611,10 +698,12 @@ class DataManager {
                 shoppingList[1].items.push(item);
                 shoppingList[1].cost += item.receipt_price;
             } 
-            // else {
-            //     shoppingList[2].items.push(item);
-            //     shoppingList[2].cost += item.receipt_price;
-            // }
+
+            /* Adds all other items to the "Extra" list. */
+            else {
+                shoppingList[2].items.push(item);
+                shoppingList[2].cost += item.receipt_price;
+            }
         } );
 
         return shoppingList;

@@ -1,27 +1,28 @@
 import { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button, TextInput } from "react-native";
+import DataManager, { Item } from "../../../shared/DataManager";
 
 type ShoppingItemProps = {
+    item_id: number,
     name: string,
     cost: number,
     store: string,
     count: number,
-    critical: boolean
+    critical: boolean,
+    onSelected: (item: Item, selected: boolean) => void
 };
 
 function ShoppingItem(props: ShoppingItemProps) {
-    const [selected, setSelected] = useState(false);
-
+    const [selected, setSelected] = useState(false); // TODO: Set selected to if item is already in list.
+    
     return (
         <View style={styles.shoppingitembar}>
             {/* Checkbox */}
             <View style={[styles.checkbox]}>
                 <Text style={styles.checkboxtext} onPress={ () => {
-                    if (!selected) {
-                        // TODO: Open the modal to add item to receipt.
-
-                        console.log(`Bought: ${props.name}`);
-                    }
+                    DataManager.getInstance().getItem(props.item_id).then(item => {
+                        props.onSelected(item, !selected);
+                    });
 
                     setSelected(!selected);
                 } }>{selected ? 'X' : ''}</Text>
@@ -68,12 +69,25 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
 
+    vseperator: {
+        borderBottomColor: '#FFFFFF',
+        borderBottomWidth: (StyleSheet.hairlineWidth*4)
+    },
+
     redtxt: {
         color: '#AA0000',
         fontSize: 15
     },
+    lgwhitetxt: {
+        color: '#ffffff',
+        fontSize: 30
+    },
     whitetext: {
         color: '#FFFFFF',
+        fontSize: 20
+    },
+    greytxt: {
+        color: '#B0B0B0',
         fontSize: 20
     },
     smallgreytext: {
