@@ -23,7 +23,7 @@ type RootStackParamList = {
         meal: number
     },
     ShoppingList: undefined,
-    ItemNutrition: {
+    ItemNutrition: undefined | {
         item_id?: number,
         item?: Item,
         mealLogProps?: any

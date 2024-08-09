@@ -47,7 +47,9 @@ const ItemList = ( {route, navigation}: ItemListRouteProp) => {
                         lastFilteredTextLength = filterText.length;
                     }} />
 
-                    <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]}>[+]</Text>
+                    <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={() => {
+                        navigation.navigate('ItemNutrition');
+                    }}>[+]</Text>
                 </View>
             </View>
             <View style={styles.mainscreen}>

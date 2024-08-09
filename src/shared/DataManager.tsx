@@ -388,60 +388,25 @@ class DataManager {
      * Adds the given item to the meal_log table.
      */
     public async addItem(item: Item) {
-        const query = `INSERT INTO item (
-            name,
-            brand,
-            pantry_id,
-            serv_qty,
-            serv_unit,
-            serv_off,
-            serv_crit,
-            weight_qty,
-            weight_unit,
-            weight_off,
-            weight_crit,
-            vol_qty,
-            vol_unit,
-            vol_off,
-            vol_crit,
-            cals,
-            prot,
-            carbs,
-            fats,
-            sat_fat,
-            cholest,
-            sodium,
-            fiber,
-            sugar
-        ) VALUES (
-            "${item.name}",
-            "${item.brand}",
-            ${item.pantry_id},
-            ${item.serv_qty},
-            "${item.serv_unit}",
-            ${item.serv_off},
-            ${item.serv_crit},
-            ${item.weight_qty},
-            "${item.weight_unit}",
-            ${item.weight_off},
-            ${item.weight_crit},
-            ${item.vol_qty},
-            "${item.vol_unit}",
-            ${item.vol_off},
-            ${item.vol_crit},
-            ${item.cals},
-            ${item.prot},
-            ${item.carbs},
-            ${item.fats},
-            ${item.sat_fat},
-            ${item.cholest},
-            ${item.sodium},
-            ${item.fiber},
-            ${item.sugar}
-        );`;
-        const result = await this.db.execAsync(query);
+        var columns = '';
+        var values = '';
 
-        console.log(result);
+        for (const key in item) {
+            columns += key + ', '
+
+            if (typeof (item as any)[key] == 'string') {
+                values += '"' + (item as any)[key] + '", ';
+            } else {
+                values += (item as any)[key] + ', ';
+            }
+        }
+
+        const query = `INSERT INTO item (${columns.substring(0, columns.length-2)}) VALUES (${values.substring(0, values.length-2)})`;
+
+        // console.log(query);
+        
+        const result = await this.db.runAsync(query);
+        console.log(`lastI0sertRowId: ${result.lastInsertRowId} | number of row changes: ${result.changes} | query: ${query}`);
     }
 
     /**
