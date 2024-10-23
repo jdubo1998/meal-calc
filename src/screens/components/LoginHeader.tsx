@@ -1,6 +1,7 @@
-import { Button, View, Text, StyleSheet, TextInput } from "react-native";
-import { useState } from "react";
+import { Button, View, Text, StyleSheet, TextInput, Modal } from "react-native";
+import React, { useState } from "react";
 import { GoogleSignin, GoogleSigninButton, statusCodes, User } from '@react-native-google-signin/google-signin';
+import { readString } from "react-native-csv";
 import DataManager from "../../shared/DataManager";
 import { Item } from "../../shared/DataManager";
 
@@ -234,6 +235,9 @@ function LoginHeader(props: HeaderProps) {
     const [accessToken, setAccessToken] = useState("");
     const [date, setDate] = useState("4/20/2024");
 
+    const [dataText, setDataText] = useState<string>("");
+    const [dataImportModal, setDataImportModal] = useState<boolean>(false);
+
     GoogleSignin.configure({
         scopes: [
             'https://www.googleapis.com/auth/drive.readonly',
@@ -255,6 +259,24 @@ function LoginHeader(props: HeaderProps) {
 
     return (
         <View style={styles.topbar}>
+            <Modal
+                transparent={true}
+                visible={dataImportModal}
+                onRequestClose={() => {
+                    setDataText("");
+                    setDataImportModal(false);
+                }}>
+                <View style={styles.modal}>
+                    <TextInput onChangeText={(text) => {setDataText(text)}} style={{backgroundColor: 'white'}}/>
+
+                    <Button title="Save" onPress={async () => {
+                        DataManager.getInstance().importLoseItCSV(dataText);
+                    }}/>
+
+                    <Button title="Cancel" onPress={() => setDataImportModal(false)}/>
+                </View>
+            </Modal>
+
             <Button title="SIGN IN" onPress={
                 async () => {
                     try {
@@ -309,6 +331,9 @@ function LoginHeader(props: HeaderProps) {
                 // jprint(data);
                 logitem(data);
             }}/>
+            <Button title="Import Data" onPress={async () => {
+                setDataImportModal(true);
+            }}/>
         </View>
     );
 }
@@ -319,6 +344,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexDirection: "row"
     },
+
+    modal: {
+        // TODO: Make this prettier.
+        marginTop: '50%',
+        margin: 30,
+        padding: 10,
+        // alignItems: 'center',
+        backgroundColor: '#000000'
+    }
 });
 
 export default LoginHeader;

@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { readString } from "react-native-csv";
 import { Milk, ProteinPowder, ReceiptMilk1, ReceiptMilk2, LogMilk, Bacon, ReceiptProteinPowder, LogBacon, LogProteinPowder } from '../../test/Testitems';
 
 export const fatGoal = 55;
@@ -82,6 +83,25 @@ const dateMs = (dateNs: number) => {
 class DataManager {
     public readonly db: SQLite.SQLiteDatabase;
     public static instance: DataManager;
+
+    public static readonly WEIGHT_CONVERSIONS = {
+        'gram': 1,
+        'g': 1,
+        'pound': 453.592,
+        'lb': 453.592,
+        'ounce': 28.3495,
+        'oz': 28.3495
+    }
+
+    public static readonly VOLUME_CONVERSIONS = {
+        'ounce': 1,
+        'oz': 1,
+        'cup': 8,
+        'tablespoon': 2,
+        'tbsp': 2,
+        'teaspoon': 6,
+        'tspn': 6
+    } 
 
     private constructor() {
         // this.db = SQLite.openDatabase('meal_calc');
@@ -460,7 +480,7 @@ class DataManager {
             WHERE meal_log.id >= ${id1} AND meal_log.id <= ${id4};
         `
 
-        console.log(logQuery);
+        // console.log(logQuery);
 
         const allRows = await this.db.getAllAsync(logQuery);
         return allRows;
@@ -681,6 +701,132 @@ class DataManager {
         }
 
         return this.instance;
+    }
+
+    public addNewItems(items: Item[]) {
+        var query = '';
+
+        items.forEach((item) => {
+            var columns = '';
+            var values = '';
+
+            Object.keys(item).forEach((key) => {
+                const value = (item as any)[key];
+
+                if (value != null && key != 'id') {
+                    columns += ',' + key
+                    values += ',"' + value + '"'
+                }
+            });
+
+            columns = 'id' + columns;
+            values = `( SELECT id FROM item WHERE name="${item.name}" AND brand="${item.brand}")` + values;
+
+            query += `INSERT OR IGNORE INTO item (${columns}) VALUES (${values});\n`;
+        });
+
+        this.db.execAsync(query).then(() => {
+            console.log('Import Done');
+        });
+    }
+
+    public importLoseItCSV(dataStr: string) {
+        var data = readString(dataStr)['data'];
+
+        /* These are the columns that each Lose It CSV will convert to into the Meal Calc Database. */
+        const columnMappings = {
+            "Name": "name",
+            "Brand": "brand",
+            "Calories": "cals",
+            "Fat (g)": "fats",
+            "Protein (g)": "prot",
+            "Carbohydrates (g)": "carbs",
+            "Saturated Fat (g)": "sat_fat",
+            "Sugars (g)": "sugar",
+            "Fiber (g)": "fiber",
+            "Cholesterol (mg)": "cholest",
+            "Sodium (mg)": "sodium",
+            "Measure": "unit",
+            "Quantity": "qty"
+        };
+
+        const header = data[0] as string[];
+        const newItems: Item[] = [];
+
+        var mapping: any = null;
+
+        data.forEach((item: any) => {
+            if (mapping == null) {
+                mapping = {};
+
+                for (var p = 0; p < header.length; p++) {
+                    mapping[(columnMappings as any)[item[p]]] = p;
+                }
+            } else {
+                for (var p = 0; p < header.length; p++) {
+                    const newItem: Item = {
+                        id: null,
+                        name: item[mapping["name"]],
+                        brand: item[mapping["brand"]],
+                        pantry_id: null,
+                        unit_type: 0,
+                        serv_qty: null,
+                        serv_unit: null,
+                        serv_off: 0,
+                        serv_crit: null,
+                        weight_qty: null,
+                        weight_unit: null,
+                        weight_off: 0,
+                        weight_crit: null,
+                        vol_qty: null,
+                        vol_unit: null,
+                        vol_off: 0,
+                        vol_crit: null,
+                        cals: item[mapping["cals"]],
+                        prot: item[mapping["prot"]],
+                        carbs: item[mapping["carbs"]],
+                        fats: item[mapping["fats"]],
+                        sat_fat: item[mapping["sat_fat"]],
+                        cholest: item[mapping["cholest"]],
+                        sodium: item[mapping["sodium"]],
+                        fiber: item[mapping["fiber"]],
+                        sugar: item[mapping["sugar"]]
+                    }
+
+                    /* Checks for any duplicates based on Name and Brand. */
+                    var isNewItem = true;
+                    for (var ni = 0; ni < newItems.length; ni++) {
+                        if (newItems[ni].brand == newItem.brand && newItems[ni].name == newItem.name) {
+                            isNewItem = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isNewItem) {
+                        const unitReg = /^(.*)s$/;
+                        const unit = (unitReg.exec(item[mapping["unit"]]) ?? ['', item[mapping["unit"]]])[1].toLowerCase();
+
+                        if (unit in DataManager.WEIGHT_CONVERSIONS) {
+                            newItem.unit_type = 1;
+                            newItem.weight_qty = item[mapping["qty"]];
+                            newItem.weight_unit = unit;
+                        } else if (unit in DataManager.VOLUME_CONVERSIONS) {
+                            newItem.unit_type = 2;
+                            newItem.vol_qty = item[mapping["qty"]];
+                            newItem.vol_unit = unit;
+                        } else {
+                            newItem.serv_qty = item[mapping["qty"]];
+                            newItem.serv_unit = unit;
+                            console.log(unit);
+                        }
+
+                        newItems.push(newItem);
+                    }
+                }
+            }
+        });
+
+        this.addNewItems(newItems);
     }
 }
 

@@ -2,7 +2,7 @@ import { Button, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity,
 import ShoppingItem from './components/ShoppingItem';
 import ShoppingHeader from './components/ShoppingHeader';
 import DataManager, { Item, Receipt } from '../../shared/DataManager';
-import { Children, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type PriceModalProps = {
     onRequestClose: () => void,
@@ -197,41 +197,39 @@ const ShoppingList = () => {
                                             style={{flexGrow: 0}}
                                             keyExtractor={item => item.id}
                                             data={list.item.items}
-                                            renderItem={receiptItem => 
-                                                {
-                                                    const stock = receiptItem.item.receipt_total_qty-receiptItem.item.meallog_total_qty;
+                                            renderItem={receiptItem => {
+                                                const stock = receiptItem.item.receipt_total_qty-receiptItem.item.meallog_total_qty;
 
-                                                    return (
-                                                        <ShoppingItem
-                                                            item_id={receiptItem.item.id}
-                                                            name={receiptItem.item.name.substring(0, 20)}
-                                                            cost={receiptItem.item.receipt_price ? receiptItem.item.receipt_price : 0} // TODO: Display as 2 decimal places.
-                                                            store={receiptItem.item.store ? receiptItem.item.store.substring(0, 20) : "?"}
-                                                            count={stock}
-                                                            critical={stock <= receiptItem.item.crit}
-                                                            onSelected={(item, selected) => {
-                                                                lastReceiptItem = receiptItem.item;
+                                                return (
+                                                    <ShoppingItem
+                                                        item_id={receiptItem.item.id}
+                                                        name={receiptItem.item.name.substring(0, 20)}
+                                                        cost={receiptItem.item.receipt_price ? receiptItem.item.receipt_price : 0} // TODO: Display as 2 decimal places.
+                                                        store={receiptItem.item.store ? receiptItem.item.store.substring(0, 20) : "?"}
+                                                        count={stock}
+                                                        critical={stock <= receiptItem.item.crit}
+                                                        onSelected={(item, selected) => {
+                                                            lastReceiptItem = receiptItem.item;
 
-                                                                if (selected) {
-                                                                    setModalItem(item);
-                                                                    setNumReceipts(numReceipts+1);
-                                                                } else {
-                                                                    for (var i = 0; i < receipts.length; i++) {
-                                                                        if (receipts[i] && receipts[i].item_id == item.id) {
-                                                                            delete receipts[i];
-                                                                            setNumReceipts(numReceipts-1);
-                                                                            break;
-                                                                        }
+                                                            if (selected) {
+                                                                setModalItem(item);
+                                                                setNumReceipts(numReceipts+1);
+                                                            } else {
+                                                                for (var i = 0; i < receipts.length; i++) {
+                                                                    if (receipts[i] && receipts[i].item_id == item.id) {
+                                                                        delete receipts[i];
+                                                                        setNumReceipts(numReceipts-1);
+                                                                        break;
                                                                     }
-
-                                                                    receipts.forEach((item) => {
-                                                                        console.log(item);
-                                                                    });
                                                                 }
-                                                            }} />
-                                                    );
-                                                }
-                                            }/>
+
+                                                                receipts.forEach((item) => {
+                                                                    console.log(item);
+                                                                });
+                                                            }
+                                                        }} />
+                                                );
+                                            }}/>
                                     }
                                 </TouchableOpacity>
                             );
