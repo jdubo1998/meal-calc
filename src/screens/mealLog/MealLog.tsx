@@ -5,7 +5,7 @@ import { isLoggedIn } from '../components/LoginHeader';
 import LoginHeader from '../components/LoginHeader';
 import DataManager from '../../shared/DataManager';
 import { MealLogRouteProp } from '../../../App';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import LogItem from './components/LogItem';
 
 // Web Client ID: 768950932318-pnu9uiacmbvsssanbhujfmd68r4ii5rq.apps.googleusercontent.com
@@ -33,24 +33,23 @@ const totalFilteredItemsByMeal = (mealLog: any[], meal: string, attr: string): n
 
 const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     const [mealLog, setMealLog] = useState<any[]>([]);
-    // const [curDate, setCurDate] = useState<number>(Date.now());
-    const [curDate, setCurDate] = useState<number>(1716163200000);
+    const [curDate, setCurDate] = useState<number>(Date.now());
+    // const [curDate, setCurDate] = useState<number>(1716163200000);
     const [savedQty, setSavedQty] = useState<number>(0);
+    const isFocused = useIsFocused();
 
     const year = new Date(curDate).getFullYear();
     const month = new Date(curDate).getMonth()+1;
     const day = new Date(curDate).getDate();
 
     const updateMealLog = () => {
-        const getLog = async () => {
-            const data = await DataManager.getInstance().getLogItemsDate(year, month, day);
-            setMealLog(data);
-        }
-
         // If the user is logged in to the header then grab the log for the given date
-        if (isLoggedIn()) {
-            getLog();
-        }
+        // if (isLoggedIn()) {
+        // }
+
+        DataManager.getInstance().getLogItemsDate(year, month, day).then((data) => {
+            setMealLog(data);
+        });
     }
 
 
@@ -58,7 +57,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
     useEffect(() => {
         // DataManager.getInstance().printTable('meal_log');
         updateMealLog();
-    }, [curDate]);
+    }, [curDate, isFocused]);
 
     const calLimit = 1700;
     const limitPercentage = 75;
@@ -79,7 +78,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                 <View style={{flexDirection: 'row'}}>
                     <View style={{flex: 1}}/>
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign:'center'}]} onPress={() => { setCurDate(curDate - 86400000); }}>{'< '}</Text>
-                    <Text style={[styles.lgwhitetxt, {flex: 2, textAlign:'center'}]}>{`${month} - ${day} - ${year}`}</Text>
+                    <Text style={[styles.lgwhitetxt, {flex: 3, textAlign:'center'}]}>{`${month} - ${day} - ${year}`}</Text>
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign:'center'}]} onPress={() => { setCurDate(curDate + 86400000); }}>{' >'}</Text>
                     <View style={{flex: 1}}>
                         {/* <Button title='Login' onPress={promptAsync}/> */}
