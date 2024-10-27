@@ -151,12 +151,10 @@ const ItemServing = ( {route, navigation}: ItemServingRouteProp ) => {
                         };
 
                         if (route.params.newLogItemDate) {
-                            DataManager.getInstance().addLogItem(newLogItem, route.params.newLogItemDate);
+                            DataManager.getInstance().addLogItem(newLogItem, route.params.newLogItemDate).then(() => navigation.navigate('MealLog'));
                         } else if (qty != route.params.logItem.qty && route.params.logItem.id) {
-                            DataManager.getInstance().updateLogItem(route.params.logItem.id, newLogItem);
+                            DataManager.getInstance().updateLogItem(route.params.logItem.id, newLogItem).then(() => navigation.navigate('MealLog'));
                         }
-
-                        navigation.navigate('MealLog');
                     }}>Save</Text>
                 </View>
             </View>
