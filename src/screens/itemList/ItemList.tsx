@@ -35,16 +35,18 @@ const ItemList = ( {route, navigation}: ItemListRouteProp) => {
             <View style={styles.topbar}>
                 <View style={{flexDirection: 'row'}}>
                     <TextInput style={[{flex: 7, borderBottomColor: '#ffffff', borderBottomWidth: 1}, styles.whitetext]} onChangeText={(filterText) => {
+                        var lowerFilterText = filterText.toLowerCase();
+
                         /* If the filter text is being added to, then filter only on the already filtered list to save computations. */
-                        if (lastFilteredTextLength < filterText.length) {
-                            setItemList(filterItemList(filterText, itemList));
+                        if (lastFilteredTextLength < lowerFilterText.length) {
+                            setItemList(filterItemList(lowerFilterText, itemList));
 
                         /* If the filter text is being deleted, then filter on the full list. */
                         } else {
-                            setItemList(filterItemList(filterText, fullItemList));
+                            setItemList(filterItemList(lowerFilterText, fullItemList));
                         }
 
-                        lastFilteredTextLength = filterText.length;
+                        lastFilteredTextLength = lowerFilterText.length;
                     }} />
 
                     <Text style={[styles.lgwhitetxt, {flex: 1, textAlign: 'right', paddingRight: 10}]} onPress={() => {
