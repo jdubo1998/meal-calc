@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 
 type MealHeaderProps = {
     name: string,
-    price: number,
+    price: string,
     cals: number
 };
 

@@ -105,7 +105,9 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                     </View>
                     <View style={{flex: 3}}/>
                     <View style={{flex: 2}}>
-                        <Text style={[styles.lgwhitetxt, {alignSelf: 'center', paddingEnd: 10}]}>${totalFilteredItemsByMeal(mealLog, '-1', 'price')}</Text>
+                        <Text style={[styles.lgwhitetxt, {alignSelf: 'center', paddingEnd: 10}]}>${
+                            totalFilteredItemsByMeal(mealLog, '-1', 'price').toFixed(2)
+                        }</Text>
                     </View>
                 </View>
                 <View style={{flexDirection: 'row'}}>
@@ -134,7 +136,7 @@ const MealLog = ( {route, navigation}: MealLogRouteProp ) => {
                         <View>
                             <LogHeader 
                                 name={meal.item.name}
-                                price={totalFilteredItemsByMeal(mealLog, meal.item.id, 'price')}
+                                price={totalFilteredItemsByMeal(mealLog, meal.item.id, 'price').toFixed(2)}
                                 cals={totalFilteredItemsByMeal(mealLog, meal.item.id, 'cals')} />
                             <FlatList
                                 style={{flexGrow: 0}}

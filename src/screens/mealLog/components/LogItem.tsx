@@ -12,7 +12,7 @@ function LogItem(props: MealItemProps) {
         <View style={styles.mealbar}>
             <Text style={[styles.greytext, {flex: 10}]}>{props.name}</Text>
             <Text style={[styles.greytext, {flex: 3}]}>{props.qty}</Text>
-            <Text style={[styles.greytext, {flex: 4}]}>${props.price}</Text>
+            <Text style={[styles.greytext, {flex: 4}]}>${props.price.toFixed(2)}</Text>
             <Text style={[styles.greytext, {flex: 4, paddingStart: 20}]}>{props.cals}</Text>
         </View>
     );
