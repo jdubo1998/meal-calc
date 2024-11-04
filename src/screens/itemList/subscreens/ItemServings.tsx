@@ -101,14 +101,14 @@ const NutritionRow = (props: NutritionRowProps) => {
     return (
         <View style={styles.nutritionbar}>
             <Text style={[styles.whitetxt, {flex: 12}]}>{props.label}</Text>
-            <Text style={[styles.greytxt, {flex: 2}]}>{props.subvalue ? `${props.subvalue}%` : ""}</Text>
+            <Text style={[styles.greytxt, {flex: 3}]}>{props.subvalue ? `${props.subvalue}%` : ""}</Text>
             <TextInput style={[styles.whitetxt, {flex: 2, textAlign: "right"}]} keyboardType="number-pad" onChangeText={(text) => {
                 try {
                     // props.value = Number.parseFloat(text);
                     (props.item as any)[props.attr] = Number.parseFloat(text);
                 } catch (e) {}
             }}>
-                {(props.item as any)[props.attr] * servMult}
+                {parseFloat(((props.item as any)[props.attr] * servMult).toPrecision(2))}
             </TextInput>
             <Text style={[styles.whitetxt, {flex: 2}]}>{props.unit}</Text>
         </View>
@@ -164,10 +164,10 @@ const ItemServing = ( {route, navigation}: ItemServingRouteProp ) => {
                         type={(route.params.logItem as any).unit_type}
                         qty={route.params.logItem.qty}
                         unit={`${route.params.logItem.unit}`}
-                        onQtyChange={(qty) => !Number.isNaN(qty) ? setQty(qty) : setQty(1)} /> : <View/>}
+                        onQtyChange={(qty) => !Number.isNaN(qty) ? setQty(qty / route.params.logItem.qty) : setQty(1)} /> : <View/>}
 
                     <View style={styles.nutritionsuperthickseperator} />
-                    <CaloriesRow value={item.cals * qty}/>
+                    <CaloriesRow value={parseFloat((item.cals * qty).toPrecision(2))}/>
                     <View style={styles.nutritionthickseperator} />
                     <Text />
                     <NutritionRow servMult={qty} label="Total Fat" item={item} attr={"fats"} unit="g" subvalue={(item.fats*qty*100/fatGoal).toPrecision(2)} />
